@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ObraClara — Control de obras inteligente</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .mob-btn{transition:transform 0.1s,opacity 0.1s;cursor:pointer;}
+    .mob-btn:active{transform:scale(0.95);opacity:0.8;}
+    .mob-scroll{overflow-y:auto;height:100%;padding-bottom:80px;}
+    .mob-scroll::-webkit-scrollbar{display:none;}
+    textarea:focus{outline:none;}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const themes = {
+  dark: {
+    bg:"#0A0E1A", bgCard:"#111827", bgCard2:"#1a2235", border:"#1e2d45",
+    text:"#F0F4FF", textSub:"#8899BB", textMuted:"#445566",
+    blue:"#3B82F6", blueDark:"#1D4ED8", blueGlow:"#3B82F620",
+    green:"#10B981", red:"#EF4444", yellow:"#F59E0B",
+    navBg:"#0D1420", inputBg:"#0D1420",
+    shadow:"0 8px 32px rgba(0,0,0,0.5)",
+  },
+  light: {
+    bg:"#F0F4FF", bgCard:"#FFFFFF", bgCard2:"#EBF0FF", border:"#CBD5E1",
+    text:"#0F172A", textSub:"#475569", textMuted:"#94A3B8",
+    blue:"#2563EB", blueDark:"#1D4ED8", blueGlow:"#2563EB15",
+    green:"#059669", red:"#DC2626", yellow:"#D97706",
+    navBg:"#FFFFFF", inputBg:"#F8FAFF",
+    shadow:"0 4px 24px rgba(37,99,235,0.08)",
+  }
+};
+
+const obras = [
+  {id:1,nombre:"Edif. Los Aromos",ubicacion:"Santiago Centro",avance:67,plan:75,estado:"atrasado",presup:68000000,gastado:45200000},
+  {id:2,nombre:"Cond. El Roble",ubicacion:"Providencia",avance:42,plan:40,estado:"adelantado",presup:120000000,gastado:48000000},
+  {id:3,nombre:"Casa Familia Torres",ubicacion:"Las Condes",avance:89,plan:90,estado:"normal",presup:18000000,gastado:16100000},
+];
+
+const alertas = [
+  {tipo:"danger", msg:"Fierro 12mm bajo stock crítico — 2 días restantes", obra:"Los Aromos"},
+  {tipo:"warning",msg:"Albañilería sin avance registrado hace 3 días",     obra:"Los Aromos"},
+  {tipo:"info",   msg:"Reporte semanal listo para enviar al mandante",     obra:"El Roble"},
+];
+
+const actividad = [
+  {hora:"08:42",icon:"📸",user:"Carlos M.",   txt:"Registró avance — Albañilería 3er piso",   tag:"foto"},
+  {hora:"07:15",icon:"🤖",user:"IA ObraClara",txt:"Reporte semanal generado automáticamente", tag:"ia"},
+  {hora:"Ayer", icon:"📦",user:"Pedro J.",    txt:"450 sacos cemento ingresados a bodega",     tag:"bodega"},
+  {hora:"Ayer", icon:"✏️",user:"Carlos M.",   txt:"Actualizó carta Gantt — estructura sem.22", tag:"avance"},
+];
+
+const fmt = n => "$"+(n/1000000).toFixed(1)+"M";
+
+const StatusBadge = ({estado,t}) => {
+  const cfg = {
+    atrasado:  {color:t.red,   label:"⚠ Atrasado"},
+    adelantado:{color:t.green, label:"↑ Adelantado"},
+    normal:    {color:t.yellow,label:"● En plazo"},
+  }[estado]||{color:t.textMuted,label:estado};
+  return <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:cfg.color+"22",color:cfg.color}}>{cfg.label}</span>;
+};
+
+const ProgressBar = ({value,plan,color,t}) => (
+  <div>
+    <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+      <span style={{fontSize:11,color:t.textSub}}>Avance real</span>
+      <span style={{fontSize:12,fontWeight:700,color}}>{Math.round(value)}% <span style={{color:t.textMuted,fontWeight:400}}>/ {plan}% plan</span></span>
+    </div>
+    <div style={{height:6,background:t.border,borderRadius:3,overflow:"hidden",position:"relative"}}>
+      <div style={{position:"absolute",height:"100%",width:plan+"%",background:t.border+"99",borderRadius:3}}/>
+      <div style={{position:"absolute",height:"100%",width:value+"%",background:`linear-gradient(90deg,${color}99,${color})`,borderRadius:3,transition:"width 1s"}}/>
+    </div>
+  </div>
+);
+
+function LoginScreen({onLogin,t,darkMode,toggleDark}) {
+  const [loading,setLoading] = React.useState(false);
+  const handleLogin = () => { setLoading(true); setTimeout(()=>{setLoading(false);onLogin();},1400); };
+  return (
+    <div style={{minHeight:"100vh",background:t.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+      backgroundImage:darkMode?"radial-gradient(ellipse at 20% 50%,#1e3a5f22 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#1e40af18 0%,transparent 50%)":"radial-gradient(ellipse at 20% 50%,#dbeafe 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#bfdbfe 0%,transparent 50%)"}}>
+      <div style={{width:"100%",maxWidth:420}}>
+        <div style={{textAlign:"center",marginBottom:40}}>
+          <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:64,height:64,borderRadius:20,marginBottom:16,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,boxShadow:`0 8px 32px ${t.blue}44`}}>
+            <span style={{fontSize:28}}>🏗️</span>
+          </div>
+          <h1 style={{fontFamily:"'Sora',sans-serif",fontSize:28,fontWeight:800,color:t.text,letterSpacing:"-0.5px"}}>
+            Obra<span style={{color:t.blue}}>Clara</span>
+          </h1>
+          <p style={{fontSize:13,color:t.textSub,marginTop:6}}>Control de obras inteligente</p>
+        </div>
+        <div style={{background:t.bgCard,borderRadius:24,padding:32,border:`1px solid ${t.border}`,boxShadow:t.shadow}}>
+          <h2 style={{fontSize:18,fontWeight:700,color:t.text,marginBottom:6,fontFamily:"'Sora',sans-serif"}}>Bienvenido de vuelta</h2>
+          <p style={{fontSize:13,color:t.textSub,marginBottom:28}}>Ingresa a tu cuenta para continuar</p>
+          <div style={{marginBottom:16}}>
+            <label style={{fontSize:12,fontWeight:600,color:t.textSub,display:"block",marginBottom:6}}>Email</label>
+            <input defaultValue="roberto@obraclara.cl"
+              style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box"}}/>
+          </div>
+          <div style={{marginBottom:24}}>
+            <label style={{fontSize:12,fontWeight:600,color:t.textSub,display:"block",marginBottom:6}}>Contraseña</label>
+            <input type="password" defaultValue="12345678"
+              style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box"}}/>
+            <div style={{textAlign:"right",marginTop:6}}>
+              <span style={{fontSize:12,color:t.blue,cursor:"pointer"}}>¿Olvidaste tu contraseña?</span>
+            </div>
+          </div>
+          <button onClick={handleLogin}
+            style={{width:"100%",padding:"14px",background:loading?t.border:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:700,cursor:loading?"default":"pointer",fontFamily:"'Sora',sans-serif",boxShadow:loading?"none":`0 4px 20px ${t.blue}44`,transition:"all 0.2s"}}>
+            {loading?"⏳ Ingresando...":"Ingresar →"}
+          </button>
+          <p style={{textAlign:"center",fontSize:12,color:t.textMuted,marginTop:20}}>
+            ¿No tienes cuenta? <span style={{color:t.blue,cursor:"pointer",fontWeight:600}}>Prueba gratis 14 días</span>
+          </p>
+        </div>
+        <div style={{textAlign:"center",marginTop:20}}>
+          <button onClick={toggleDark} style={{background:"none",border:`1px solid ${t.border}`,borderRadius:20,padding:"6px 16px",color:t.textSub,fontSize:12,cursor:"pointer"}}>
+            {darkMode?"☀️ Modo día":"🌙 Modo noche"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
+  const [activeTab,setActiveTab] = React.useState("dashboard");
+  const [activeObra,setActiveObra] = React.useState(0);
+
+  const navItems = [
+    {id:"dashboard",icon:"▦", label:"Dashboard"},
+    {id:"obras",    icon:"🏗️",label:"Mis Obras"},
+    {id:"registro", icon:"✏️",label:"Registro"},
+    {id:"materiales",icon:"📦",label:"Materiales"},
+    {id:"reportes", icon:"🤖",label:"Reportes IA"},
+    {id:"mandante", icon:"👁️",label:"Mandante"},
+  ];
+
+  return (
+    <div style={{display:"flex",height:"100vh",background:t.bg,fontFamily:"'DM Sans',sans-serif",overflow:"hidden"}}>
+      {/* Sidebar */}
+      <div style={{width:220,background:t.navBg,borderRight:`1px solid ${t.border}`,display:"flex",flexDirection:"column",flexShrink:0}}>
+        <div style={{padding:"24px 20px 20px",borderBottom:`1px solid ${t.border}`}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:36,height:36,borderRadius:10,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🏗️</div>
+            <div>
+              <div style={{fontFamily:"'Sora',sans-serif",fontWeight:800,fontSize:16,color:t.text}}>Obra<span style={{color:t.blue}}>Clara</span></div>
+              <div style={{fontSize:10,color:t.textMuted}}>PRO PLAN</div>
+            </div>
+          </div>
+        </div>
+        <nav style={{padding:"12px 10px",flex:1}}>
+          {navItems.map(item=>(
+            <button key={item.id} onClick={()=>setActiveTab(item.id)}
+              style={{width:"100%",padding:"9px 12px",borderRadius:10,display:"flex",alignItems:"center",gap:10,marginBottom:2,background:activeTab===item.id?t.blueGlow:"transparent",border:activeTab===item.id?`1px solid ${t.blue}33`:"1px solid transparent",color:activeTab===item.id?t.blue:t.textMuted,cursor:"pointer",transition:"all 0.15s"}}>
+              <span style={{fontSize:15}}>{item.icon}</span>
+              <span style={{fontSize:13,fontWeight:activeTab===item.id?600:400}}>{item.label}</span>
+              {item.id==="reportes"&&<span style={{marginLeft:"auto",width:18,height:18,borderRadius:"50%",background:t.blue,color:"#fff",fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>1</span>}
+            </button>
+          ))}
+        </nav>
+        <div style={{padding:"12px 16px",borderTop:`1px solid ${t.border}`}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div style={{width:32,height:32,borderRadius:"50%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff"}}>RV</div>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:t.text}}>Roberto V.</div>
+              <div style={{fontSize:10,color:t.textMuted}}>Constructor Civil</div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={toggleDark} style={{flex:1,padding:"6px",background:t.bg,border:`1px solid ${t.border}`,borderRadius:8,color:t.textSub,fontSize:12,cursor:"pointer"}}>{darkMode?"☀️":"🌙"}</button>
+            <button onClick={onLogout} style={{flex:1,padding:"6px",background:t.bg,border:`1px solid ${t.border}`,borderRadius:8,color:t.textSub,fontSize:11,cursor:"pointer"}}>Salir</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main */}
+      <div style={{flex:1,overflow:"auto"}}>
+        <div style={{padding:"16px 28px",borderBottom:`1px solid ${t.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:t.navBg,position:"sticky",top:0,zIndex:10}}>
+          <div>
+            <h1 style={{fontFamily:"'Sora',sans-serif",fontSize:18,fontWeight:800,color:t.text,margin:0}}>
+              {{dashboard:"Dashboard General",obras:"Mis Obras",registro:"Registro Diario",materiales:"Materiales",reportes:"Reportes IA",mandante:"Portal Mandante"}[activeTab]}
+            </h1>
+            <p style={{fontSize:11,color:t.textMuted,margin:0,marginTop:2}}>Lunes 9 de marzo, 2026</p>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <div style={{position:"relative"}}>
+              <button style={{background:t.bgCard2,border:`1px solid ${t.border}`,borderRadius:10,padding:"8px 12px",color:t.textSub,fontSize:14,cursor:"pointer"}}>🔔</button>
+              <div style={{position:"absolute",top:5,right:7,width:8,height:8,background:t.red,borderRadius:"50%",border:`2px solid ${t.navBg}`}}/>
+            </div>
+            <button style={{background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:10,padding:"8px 18px",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Nueva Obra</button>
+          </div>
+        </div>
+
+        <div style={{padding:"24px 28px",animation:"fadeIn 0.3s ease"}}>
+          {activeTab==="dashboard"&&(
+            <div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24}}>
+                {[
+                  {label:"Obras Activas",value:"3",sub:"2 en plazo · 1 atrasada",icon:"🏗️",color:t.blue},
+                  {label:"Avance Promedio",value:"66%",sub:"+2% esta semana",icon:"📈",color:t.green},
+                  {label:"Presupuesto",value:"$206M",sub:"$109M ejecutado",icon:"💰",color:t.yellow},
+                  {label:"Alertas",value:"3",sub:"1 crítica · 2 medias",icon:"⚠️",color:t.red},
+                ].map((k,i)=>(
+                  <div key={i} style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:"18px 20px",boxShadow:t.shadow}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <div>
+                        <p style={{fontSize:11,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.5px",margin:0}}>{k.label}</p>
+                        <p style={{fontSize:28,fontWeight:800,color:t.text,margin:"6px 0 4px",fontFamily:"'Sora',sans-serif"}}>{k.value}</p>
+                        <p style={{fontSize:11,color:t.textSub,margin:0}}>{k.sub}</p>
+                      </div>
+                      <div style={{width:40,height:40,borderRadius:12,background:k.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{k.icon}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 320px",gap:20}}>
+                <div>
+                  <h2 style={{fontSize:12,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Estado de Obras</h2>
+                  {obras.map((o,i)=>(
+                    <div key={i} onClick={()=>{setActiveObra(i);setActiveTab("obras");}}
+                      style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:20,marginBottom:12,cursor:"pointer",transition:"all 0.2s",boxShadow:t.shadow}}
+                      onMouseEnter={e=>e.currentTarget.style.borderColor=t.blue+"66"}
+                      onMouseLeave={e=>e.currentTarget.style.borderColor=t.border}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
+                        <div>
+                          <p style={{fontSize:15,fontWeight:700,color:t.text,margin:0}}>{o.nombre}</p>
+                          <p style={{fontSize:11,color:t.textMuted,margin:"4px 0 0"}}>📍 {o.ubicacion}</p>
+                        </div>
+                        <StatusBadge estado={o.estado} t={t}/>
+                      </div>
+                      <ProgressBar value={o.avance} plan={o.plan} color={o.estado==="atrasado"?t.red:o.estado==="adelantado"?t.green:t.blue} t={t}/>
+                      <div style={{display:"flex",justifyContent:"space-between",marginTop:12}}>
+                        <span style={{fontSize:11,color:t.textMuted}}>Presupuesto: <strong style={{color:t.text}}>{fmt(o.presupuesto)}</strong></span>
+                        <span style={{fontSize:11,color:t.textMuted}}>Ejecutado: <strong style={{color:t.blue}}>{fmt(o.gastado)}</strong></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:16}}>
+                  <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:18,boxShadow:t.shadow}}>
+                    <h3 style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Alertas</h3>
+                    {alertas.map((a,i)=>(
+                      <div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:i<alertas.length-1?`1px solid ${t.border}`:"none"}}>
+                        <div style={{width:8,height:8,borderRadius:"50%",marginTop:5,flexShrink:0,background:a.tipo==="danger"?t.red:a.tipo==="warning"?t.yellow:t.blue}}/>
+                        <div>
+                          <p style={{fontSize:12,color:t.textSub,margin:0,lineHeight:1.5}}>{a.msg}</p>
+                          <p style={{fontSize:10,color:t.textMuted,margin:"2px 0 0"}}>{a.obra}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:18,boxShadow:t.shadow}}>
+                    <h3 style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Actividad</h3>
+                    {actividad.map((a,i)=>(
+                      <div key={i} style={{display:"flex",gap:10,padding:"9px 0",borderBottom:i<actividad.length-1?`1px solid ${t.border}`:"none"}}>
+                        <div style={{width:30,height:30,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,background:a.tag==="ia"?t.blue+"18":a.tag==="foto"?t.green+"18":t.yellow+"18"}}>{a.icon}</div>
+                        <div>
+                          <p style={{fontSize:11,fontWeight:600,color:t.textSub,margin:0}}>{a.user}</p>
+                          <p style={{fontSize:11,color:t.textMuted,margin:"2px 0 0",lineHeight:1.4}}>{a.txt}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab==="obras"&&(
+            <div>
+              <div style={{display:"flex",gap:10,marginBottom:24}}>
+                {obras.map((o,i)=>(
+                  <button key={i} onClick={()=>setActiveObra(i)}
+                    style={{padding:"8px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:activeObra===i?`linear-gradient(135deg,${t.blue},${t.blueDark})`:t.bgCard,border:activeObra===i?"none":`1px solid ${t.border}`,color:activeObra===i?"#fff":t.textSub,cursor:"pointer",transition:"all 0.2s"}}>
+                    {o.nombre}
+                  </button>
+                ))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+                <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:24,boxShadow:t.shadow}}>
+                  <h3 style={{fontSize:14,fontWeight:700,color:t.text,marginBottom:20}}>Avance por Partidas</h3>
+                  {[{n:"Fundaciones",v:100},{n:"Estructura",v:85},{n:"Albañilería",v:60},{n:"Instalaciones",v:40},{n:"Terminaciones",v:10}].map((p,i)=>(
+                    <div key={i} style={{marginBottom:16}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                        <span style={{fontSize:13,color:t.textSub}}>{p.n}</span>
+                        <span style={{fontSize:13,fontWeight:700,color:p.v===100?t.green:p.v>50?t.yellow:t.red}}>{p.v}%</span>
+                      </div>
+                      <div style={{height:7,background:t.border,borderRadius:4,overflow:"hidden"}}>
+                        <div style={{height:"100%",borderRadius:4,width:p.v+"%",background:p.v===100?t.green:p.v>50?t.yellow:t.red,transition:"width 1s"}}/>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:24,boxShadow:t.shadow}}>
+                  <h3 style={{fontSize:14,fontWeight:700,color:t.text,marginBottom:20}}>Presupuesto</h3>
+                  <div style={{display:"flex",alignItems:"center",gap:24}}>
+                    <div style={{position:"relative",width:120,height:120,flexShrink:0}}>
+                      <svg viewBox="0 0 120 120" style={{transform:"rotate(-90deg)",width:120,height:120}}>
+                        <circle cx="60" cy="60" r="48" fill="none" stroke={t.border} strokeWidth="10"/>
+                        <circle cx="60" cy="60" r="48" fill="none" stroke={t.blue} strokeWidth="10" strokeLinecap="round"
+                          strokeDasharray={`${2*Math.PI*48*obras[activeObra].gastado/obras[activeObra].presupuesto} ${2*Math.PI*48}`}/>
+                      </svg>
+                      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                        <span style={{fontSize:20,fontWeight:800,color:t.text,fontFamily:"'Sora',sans-serif"}}>{Math.round(obras[activeObra].gastado/obras[activeObra].presupuesto*100)}%</span>
+                        <span style={{fontSize:9,color:t.textMuted}}>ejecutado</span>
+                      </div>
+                    </div>
+                    <div style={{flex:1}}>
+                      {[
+                        {label:"Presupuesto",value:fmt(obras[activeObra].presupuesto),color:t.textMuted},
+                        {label:"Gastado",    value:fmt(obras[activeObra].gastado),     color:t.blue},
+                        {label:"Disponible", value:fmt(obras[activeObra].presupuesto-obras[activeObra].gastado),color:t.green},
+                      ].map((item,i)=>(
+                        <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:i<2?`1px solid ${t.border}`:"none"}}>
+                          <span style={{fontSize:12,color:t.textSub}}>{item.label}</span>
+                          <span style={{fontSize:13,fontWeight:700,color:item.color}}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab==="reportes"&&(
+            <div>
+              <div style={{background:`linear-gradient(135deg,${t.blue}18,${t.blue}08)`,border:`1px solid ${t.blue}33`,borderRadius:20,padding:28,marginBottom:24}}>
+                <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:18}}>
+                  <div style={{width:48,height:48,borderRadius:14,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🤖</div>
+                  <div>
+                    <h2 style={{fontSize:16,fontWeight:700,color:t.text,margin:0}}>Reporte Semanal — Generado por IA</h2>
+                    <p style={{fontSize:12,color:t.textMuted,margin:"4px 0 0"}}>Lunes 9 marzo · Edificio Los Aromos</p>
+                  </div>
+                  <button style={{marginLeft:"auto",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:10,padding:"10px 20px",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>📤 Enviar al Mandante</button>
+                </div>
+                <div style={{background:t.bgCard,borderRadius:14,padding:20,borderLeft:`4px solid ${t.blue}`,lineHeight:1.8,fontSize:14,color:t.textSub}}>
+                  <p style={{marginBottom:12}}>Avance acumulado <strong style={{color:t.blue}}>67%</strong>, con retraso de <strong style={{color:t.red}}>8 días</strong> por lluvias del 3 de marzo. Presupuesto ejecutado <strong style={{color:t.green}}>$45.2M</strong> de $68M (66%), alineado con avance físico.</p>
+                  <p style={{padding:"12px 16px",background:t.yellow+"18",borderRadius:10,borderLeft:`3px solid ${t.yellow}`,color:t.yellow,fontWeight:600,fontSize:13,margin:0}}>⚡ Recomendación: Agregar 3 fierreros para recuperar retraso antes del hito de estructura (30 marzo).</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(activeTab==="registro"||activeTab==="materiales"||activeTab==="mandante")&&(
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:400,gap:16}}>
+              <div style={{fontSize:48}}>{activeTab==="registro"?"✏️":activeTab==="materiales"?"📦":"👁️"}</div>
+              <h2 style={{fontSize:20,fontWeight:700,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>
+                {{registro:"Registro Diario",materiales:"Control de Materiales",mandante:"Portal Mandante"}[activeTab]}
+              </h2>
+              <p style={{color:t.textMuted,fontSize:14,textAlign:"center",maxWidth:300}}>Próxima pantalla — en construcción 🚧</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
+  const [tab,setTab] = React.useState("home");
+  const [obraIdx,setObraIdx] = React.useState(0);
+
+  return (
+    <div style={{display:"flex",justifyContent:"center",alignItems:"center",minHeight:"100vh",background:darkMode?"#000":"#e8edf5",fontFamily:"'DM Sans',sans-serif"}}>
+      <div style={{width:390,height:844,background:t.bg,borderRadius:48,overflow:"hidden",position:"relative",boxShadow:"0 40px 120px rgba(0,0,0,0.4)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",padding:"14px 28px 0",fontSize:12,fontWeight:700,color:t.text}}>
+          <span>9:41</span>
+          <div style={{width:120,height:32,background:"#000",borderRadius:"0 0 20px 20px",margin:"0 auto"}}/>
+          <span style={{fontSize:10}}>●●● 5G</span>
+        </div>
+        <div className="mob-scroll" style={{height:"calc(100% - 80px)",marginTop:6}}>
+          {tab==="home"&&(
+            <div style={{padding:"0 20px 20px",animation:"fadeIn 0.3s ease"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:22}}>
+                <div>
+                  <p style={{fontSize:12,color:t.textMuted,margin:0}}>Buenos días 👋</p>
+                  <h1 style={{fontSize:22,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Roberto V.</h1>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={toggleDark} className="mob-btn" style={{width:38,height:38,borderRadius:12,background:t.bgCard,border:`1px solid ${t.border}`,cursor:"pointer",fontSize:16}}>{darkMode?"☀️":"🌙"}</button>
+                  <div style={{position:"relative"}}>
+                    <div style={{width:38,height:38,borderRadius:"50%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff"}}>RV</div>
+                    <div style={{position:"absolute",top:0,right:0,width:10,height:10,background:t.red,borderRadius:"50%",border:`2px solid ${t.bg}`}}/>
+                  </div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:10,marginBottom:22}}>
+                {[{v:"3",l:"Obras",c:t.blue},{v:"66%",l:"Avance",c:t.green},{v:"3",l:"Alertas",c:t.red}].map((k,i)=>(
+                  <div key={i} style={{flex:1,background:k.c+"18",border:`1px solid ${k.c}33`,borderRadius:16,padding:"14px 10px",textAlign:"center"}}>
+                    <p style={{fontSize:22,fontWeight:800,color:k.c,margin:0,fontFamily:"'Sora',sans-serif"}}>{k.v}</p>
+                    <p style={{fontSize:10,color:t.textMuted,margin:"3px 0 0"}}>{k.l}</p>
+                  </div>
+                ))}
+              </div>
+              <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Mis Obras</p>
+              {obras.map((o,i)=>(
+                <div key={i} className="mob-btn" onClick={()=>{setObraIdx(i);setTab("obra");}}
+                  style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:18,padding:18,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                    <div>
+                      <p style={{fontSize:14,fontWeight:700,color:t.text,margin:0}}>{o.nombre}</p>
+                      <p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>📍 {o.ubicacion}</p>
+                    </div>
+                    <StatusBadge estado={o.estado} t={t}/>
+                  </div>
+                  <ProgressBar value={o.avance} plan={o.plan} color={o.estado==="atrasado"?t.red:o.estado==="adelantado"?t.green:t.blue} t={t}/>
+                </div>
+              ))}
+            </div>
+          )}
+          {tab==="obra"&&(
+            <div style={{padding:"0 20px 20px",animation:"fadeIn 0.3s ease"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,paddingTop:8,marginBottom:20}}>
+                <button className="mob-btn" onClick={()=>setTab("home")} style={{width:36,height:36,borderRadius:12,background:t.bgCard,border:`1px solid ${t.border}`,cursor:"pointer",color:t.text,fontSize:18}}>←</button>
+                <div style={{flex:1}}>
+                  <h2 style={{fontSize:17,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>{obras[obraIdx].nombre}</h2>
+                  <p style={{fontSize:11,color:t.textMuted,margin:0}}>📍 {obras[obraIdx].ubicacion}</p>
+                </div>
+                <StatusBadge estado={obras[obraIdx].estado} t={t}/>
+              </div>
+              <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:20,padding:22,marginBottom:14,display:"flex",alignItems:"center",gap:20}}>
+                <div style={{position:"relative",width:88,height:88,flexShrink:0}}>
+                  <svg viewBox="0 0 88 88" style={{transform:"rotate(-90deg)",width:88,height:88}}>
+                    <circle cx="44" cy="44" r="34" fill="none" stroke={t.border} strokeWidth="8"/>
+                    <circle cx="44" cy="44" r="34" fill="none" stroke={t.blue} strokeWidth="8" strokeLinecap="round"
+                      strokeDasharray={`${2*Math.PI*34*obras[obraIdx].avance/100} ${2*Math.PI*34}`}/>
+                  </svg>
+                  <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                    <span style={{fontSize:17,fontWeight:800,color:t.text,fontFamily:"'Sora',sans-serif"}}>{obras[obraIdx].avance}%</span>
+                  </div>
+                </div>
+                <div style={{flex:1}}>
+                  <p style={{fontSize:12,color:t.textSub,margin:"0 0 6px"}}>Plan: <strong style={{color:t.text}}>{obras[obraIdx].plan}%</strong></p>
+                  <p style={{fontSize:12,color:t.textSub,margin:"0 0 6px"}}>Presup: <strong style={{color:t.text}}>{fmt(obras[obraIdx].presupuesto)}</strong></p>
+                  <p style={{fontSize:12,color:t.textSub,margin:0}}>Ejecutado: <strong style={{color:t.blue}}>{fmt(obras[obraIdx].gastado)}</strong></p>
+                </div>
+              </div>
+              <button className="mob-btn" onClick={()=>setTab("registro")}
+                style={{width:"100%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:16,padding:16,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",marginBottom:14}}>
+                ✏️ Registrar avance hoy
+              </button>
+            </div>
+          )}
+          {tab==="registro"&&(
+            <div style={{padding:"0 20px 20px",animation:"fadeIn 0.3s ease"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,paddingTop:8,marginBottom:22}}>
+                <button className="mob-btn" onClick={()=>setTab("obra")} style={{width:36,height:36,borderRadius:12,background:t.bgCard,border:`1px solid ${t.border}`,cursor:"pointer",color:t.text,fontSize:18}}>←</button>
+                <h2 style={{fontSize:18,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Nuevo Registro</h2>
+              </div>
+              <div style={{background:t.blue+"18",border:`1px solid ${t.blue}33`,borderRadius:14,padding:"14px 18px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:14,color:t.text,fontWeight:600}}>📅 Lunes 9 Mar, 2026</span>
+                <span style={{fontSize:11,color:t.blue,fontWeight:700}}>HOY</span>
+              </div>
+              <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:16,marginBottom:12}}>
+                <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Clima</p>
+                <div style={{display:"flex",gap:8}}>
+                  {["☀️","⛅","☁️","🌧️"].map((c,i)=>(
+                    <button key={i} className="mob-btn" style={{flex:1,padding:"12px 0",fontSize:22,background:i===0?t.yellow+"22":t.bgCard2,border:i===0?`1px solid ${t.yellow}55`:`1px solid ${t.border}`,borderRadius:12,cursor:"pointer"}}>{c}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:16,marginBottom:12}}>
+                <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Personal</p>
+                <div style={{display:"flex",gap:8}}>
+                  {["8","10","12","14","16"].map((n,i)=>(
+                    <button key={i} className="mob-btn" style={{flex:1,padding:"10px 0",background:n==="14"?`linear-gradient(135deg,${t.blue},${t.blueDark})`:t.bgCard2,border:n==="14"?"none":`1px solid ${t.border}`,borderRadius:12,color:n==="14"?"#fff":t.textSub,fontSize:14,fontWeight:700,cursor:"pointer"}}>{n}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:16,marginBottom:14}}>
+                <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:10}}>Actividades del día</p>
+                <textarea placeholder="Describe las actividades..." style={{width:"100%",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,padding:14,color:t.text,fontSize:13,resize:"none",height:90,fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box"}}/>
+              </div>
+              <button className="mob-btn" style={{width:"100%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:16,padding:16,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>✓ Guardar Registro</button>
+            </div>
+          )}
+        </div>
+        <div style={{position:"absolute",bottom:0,left:0,right:0,background:darkMode?"rgba(10,14,26,0.95)":"rgba(255,255,255,0.95)",backdropFilter:"blur(20px)",borderTop:`1px solid ${t.border}`,padding:"8px 10px 24px",display:"flex",justifyContent:"space-around"}}>
+          {[{id:"home",icon:"▦",label:"Inicio"},{id:"obra",icon:"🏗️",label:"Obra"},{id:"registro",icon:"✏️",label:"Registrar"},{id:"home",icon:"📦",label:"Bodega"},{id:"home",icon:"🤖",label:"IA"}].map((item,i)=>(
+            <div key={i} onClick={()=>setTab(item.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 14px",borderRadius:14,cursor:"pointer",background:tab===item.id?t.blue+"18":"transparent",transition:"all 0.2s"}}>
+              <span style={{fontSize:20}}>{item.icon}</span>
+              <span style={{fontSize:10,fontWeight:tab===item.id?700:400,color:tab===item.id?t.blue:t.textMuted}}>{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [darkMode,setDarkMode] = React.useState(true);
+  const [loggedIn,setLoggedIn] = React.useState(false);
+  const [view,setView] = React.useState("web");
+  const t = themes[darkMode?"dark":"light"];
+  const toggleDark = () => setDarkMode(d=>!d);
+
+  if(!loggedIn) return <LoginScreen onLogin={()=>setLoggedIn(true)} t={t} darkMode={darkMode} toggleDark={toggleDark}/>;
+
+  return (
+    <div>
+      <div style={{position:"fixed",top:16,right:16,zIndex:9999,display:"flex",gap:6,background:darkMode?"rgba(10,14,26,0.9)":"rgba(255,255,255,0.9)",backdropFilter:"blur(12px)",borderRadius:14,padding:6,border:`1px solid ${t.border}`,boxShadow:t.shadow}}>
+        {["web","mobile"].map(v=>(
+          <button key={v} onClick={()=>setView(v)} style={{padding:"6px 14px",borderRadius:10,fontSize:12,fontWeight:600,background:view===v?`linear-gradient(135deg,${t.blue},${t.blueDark})`:"transparent",border:"none",color:view===v?"#fff":t.textMuted,cursor:"pointer",transition:"all 0.2s"}}>
+            {v==="web"?"🖥️ Web":"📱 Móvil"}
+          </button>
+        ))}
+      </div>
+      {view==="web"
+        ?<DashboardWeb    t={t} darkMode={darkMode} toggleDark={toggleDark} onLogout={()=>setLoggedIn(false)}/>
+        :<DashboardMobile t={t} darkMode={darkMode} toggleDark={toggleDark} onLogout={()=>setLoggedIn(false)}/>
+      }
+    </div>
+  );
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'));
+</script>
+</body>
+</html>
