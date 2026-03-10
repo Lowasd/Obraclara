@@ -264,70 +264,122 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
         <div style={{padding:"24px 28px",animation:"fadeIn 0.3s ease"}}>
           {activeTab==="dashboard"&&(
             <div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24}}>
+              {/* Saludo contextual */}
+              <div style={{marginBottom:24}}>
+                <h2 style={{fontFamily:"'Sora',sans-serif",fontSize:22,fontWeight:800,color:t.text,margin:"0 0 4px"}}>Buenos días, Roberto 👋</h2>
+                <p style={{fontSize:13,color:t.textMuted,margin:0}}>Lunes 9 de marzo — Esto es lo que requiere tu atención hoy</p>
+              </div>
+
+              {/* ZONA CRÍTICA: registros pendientes */}
+              <div style={{background:t.red+"0D",border:`1.5px solid ${t.red}33`,borderRadius:18,padding:20,marginBottom:20}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                  <div style={{width:32,height:32,borderRadius:10,background:t.red+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>⚠️</div>
+                  <div>
+                    <p style={{fontSize:13,fontWeight:700,color:t.red,margin:0}}>Registro pendiente de ayer</p>
+                    <p style={{fontSize:11,color:t.textMuted,margin:"2px 0 0"}}>Viernes 8 de marzo — sin cerrar jornada</p>
+                  </div>
+                </div>
                 {[
-                  {label:"Obras Activas",value:"3",sub:"2 en plazo · 1 atrasada",icon:"🏗️",color:t.blue},
-                  {label:"Avance Promedio",value:"66%",sub:"+2% esta semana",icon:"📈",color:t.green},
-                  {label:"Presupuesto",value:"$206M",sub:"$109M ejecutado",icon:"💰",color:t.yellow},
-                  {label:"Alertas",value:"3",sub:"1 crítica · 2 medias",icon:"⚠️",color:t.red},
-                ].map((k,i)=>(
-                  <div key={i} style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:"18px 20px",boxShadow:t.shadow}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                      <div>
-                        <p style={{fontSize:11,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.5px",margin:0}}>{k.label}</p>
-                        <p style={{fontSize:28,fontWeight:800,color:t.text,margin:"6px 0 4px",fontFamily:"'Sora',sans-serif"}}>{k.value}</p>
-                        <p style={{fontSize:11,color:t.textSub,margin:0}}>{k.sub}</p>
-                      </div>
-                      <div style={{width:40,height:40,borderRadius:12,background:k.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{k.icon}</div>
+                  {obra:"Edif. Los Aromos", jefe:"Carlos M.", ult:"Jueves 7 mar · 17:42", foto:"🏗️"},
+                ].map((item,i)=>(
+                  <div key={i} style={{background:t.bgCard,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:14}}>
+                    <div style={{width:40,height:40,borderRadius:10,background:t.red+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{item.foto}</div>
+                    <div style={{flex:1}}>
+                      <p style={{fontSize:14,fontWeight:700,color:t.text,margin:0}}>{item.obra}</p>
+                      <p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>Jefe: {item.jefe} · Último registro: {item.ult}</p>
                     </div>
+                    <button style={{background:t.red,border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>Recordar →</button>
                   </div>
                 ))}
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 320px",gap:20}}>
-                <div>
-                  <h2 style={{fontSize:12,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Estado de Obras</h2>
-                  {obras.map((o,i)=>(
+
+              {/* Alertas urgentes */}
+              <div style={{background:t.yellow+"0D",border:`1.5px solid ${t.yellow}33`,borderRadius:18,padding:20,marginBottom:20}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                  <div style={{width:32,height:32,borderRadius:10,background:t.yellow+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>📦</div>
+                  <p style={{fontSize:13,fontWeight:700,color:t.yellow,margin:0}}>Materiales con stock crítico</p>
+                </div>
+                {[
+                  {mat:"Fierro 12mm",  obra:"Los Aromos",  dias:2, actual:"80 kg", minimo:"500 kg"},
+                  {mat:"Cemento Polpaico", obra:"El Roble", dias:4, actual:"12 sacos", minimo:"40 sacos"},
+                ].map((item,i)=>(
+                  <div key={i} style={{background:t.bgCard,borderRadius:12,padding:"12px 16px",marginBottom:i===0?8:0,display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{flex:1}}>
+                      <p style={{fontSize:13,fontWeight:700,color:t.text,margin:0}}>{item.mat} <span style={{fontSize:11,color:t.textMuted,fontWeight:400}}>· {item.obra}</span></p>
+                      <p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>Stock actual: <strong style={{color:t.red}}>{item.actual}</strong> · Mínimo: {item.minimo}</p>
+                    </div>
+                    <span style={{fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:20,background:t.red+"22",color:t.red,whiteSpace:"nowrap"}}>{item.dias}d restantes</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Estado obras — más compacto */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14,marginBottom:20}}>
+                {obras.map((o,i)=>{
+                  const diff = o.avance - o.plan;
+                  const color = diff >= 0 ? t.green : diff > -10 ? t.yellow : t.red;
+                  return (
                     <div key={i} onClick={()=>{setActiveObra(i);setActiveTab("obras");}}
-                      style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:20,marginBottom:12,cursor:"pointer",transition:"all 0.2s",boxShadow:t.shadow}}
+                      style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:18,cursor:"pointer",transition:"all 0.2s",boxShadow:t.shadow}}
                       onMouseEnter={e=>e.currentTarget.style.borderColor=t.blue+"66"}
                       onMouseLeave={e=>e.currentTarget.style.borderColor=t.border}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
                         <div>
-                          <p style={{fontSize:15,fontWeight:700,color:t.text,margin:0}}>{o.nombre}</p>
-                          <p style={{fontSize:11,color:t.textMuted,margin:"4px 0 0"}}>📍 {o.ubicacion}</p>
+                          <p style={{fontSize:13,fontWeight:700,color:t.text,margin:0}}>{o.nombre}</p>
+                          <p style={{fontSize:10,color:t.textMuted,margin:"3px 0 0"}}>📍 {o.ubicacion}</p>
                         </div>
-                        <StatusBadge estado={o.estado} t={t}/>
+                        <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:color+"22",color:color}}>
+                          {diff>=0?`+${diff}%`:`${diff}%`}
+                        </span>
                       </div>
-                      <ProgressBar value={o.avance} plan={o.plan} color={o.estado==="atrasado"?t.red:o.estado==="adelantado"?t.green:t.blue} t={t}/>
-                      <div style={{display:"flex",justifyContent:"space-between",marginTop:12}}>
-                        <span style={{fontSize:11,color:t.textMuted}}>Presupuesto: <strong style={{color:t.text}}>{fmt(o.presupuesto)}</strong></span>
-                        <span style={{fontSize:11,color:t.textMuted}}>Ejecutado: <strong style={{color:t.blue}}>{fmt(o.gastado)}</strong></span>
+                      <ProgressBar value={o.avance} plan={o.plan} color={color} t={t}/>
+                      <div style={{display:"flex",justifyContent:"space-between",marginTop:10}}>
+                        <span style={{fontSize:11,color:t.textMuted}}>Real: <strong style={{color:t.text}}>{o.avance}%</strong></span>
+                        <span style={{fontSize:11,color:t.textMuted}}>Plan: <strong style={{color:t.textSub}}>{o.plan}%</strong></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Actividad reciente + reporte IA listo */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 320px",gap:20}}>
+                <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:18,boxShadow:t.shadow}}>
+                  <h3 style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Actividad reciente</h3>
+                  {actividad.map((a,i)=>(
+                    <div key={i} style={{display:"flex",gap:12,padding:"9px 0",borderBottom:i<actividad.length-1?`1px solid ${t.border}`:"none",alignItems:"center"}}>
+                      <div style={{width:32,height:32,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,background:a.tag==="ia"?t.blue+"18":a.tag==="foto"?t.green+"18":t.yellow+"18"}}>{a.icon}</div>
+                      <div style={{flex:1}}>
+                        <p style={{fontSize:12,fontWeight:600,color:t.textSub,margin:0}}>{a.user} <span style={{color:t.textMuted,fontWeight:400}}>· {a.hora}</span></p>
+                        <p style={{fontSize:11,color:t.textMuted,margin:"2px 0 0",lineHeight:1.4}}>{a.txt}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div style={{display:"flex",flexDirection:"column",gap:16}}>
-                  <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:18,boxShadow:t.shadow}}>
-                    <h3 style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Alertas</h3>
-                    {alertas.map((a,i)=>(
-                      <div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:i<alertas.length-1?`1px solid ${t.border}`:"none"}}>
-                        <div style={{width:8,height:8,borderRadius:"50%",marginTop:5,flexShrink:0,background:a.tipo==="danger"?t.red:a.tipo==="warning"?t.yellow:t.blue}}/>
-                        <div>
-                          <p style={{fontSize:12,color:t.textSub,margin:0,lineHeight:1.5}}>{a.msg}</p>
-                          <p style={{fontSize:10,color:t.textMuted,margin:"2px 0 0"}}>{a.obra}</p>
-                        </div>
+                <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                  {/* Reporte IA listo */}
+                  <div style={{background:`linear-gradient(135deg,${t.blue}18,${t.blue}08)`,border:`1.5px solid ${t.blue}44`,borderRadius:16,padding:18}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                      <div style={{width:36,height:36,borderRadius:10,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🤖</div>
+                      <div>
+                        <p style={{fontSize:13,fontWeight:700,color:t.text,margin:0}}>Reporte semanal listo</p>
+                        <p style={{fontSize:10,color:t.textMuted,margin:"2px 0 0"}}>El Roble · semana 10</p>
                       </div>
-                    ))}
+                    </div>
+                    <p style={{fontSize:12,color:t.textSub,margin:"0 0 12px",lineHeight:1.5}}>La IA procesó 5 registros y 23 fotos. Listo para enviar al mandante.</p>
+                    <button onClick={()=>setActiveTab("reportes")} style={{width:"100%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:10,padding:"10px",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Ver y enviar →</button>
                   </div>
-                  <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:18,boxShadow:t.shadow}}>
-                    <h3 style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Actividad</h3>
-                    {actividad.map((a,i)=>(
-                      <div key={i} style={{display:"flex",gap:10,padding:"9px 0",borderBottom:i<actividad.length-1?`1px solid ${t.border}`:"none"}}>
-                        <div style={{width:30,height:30,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,background:a.tag==="ia"?t.blue+"18":a.tag==="foto"?t.green+"18":t.yellow+"18"}}>{a.icon}</div>
-                        <div>
-                          <p style={{fontSize:11,fontWeight:600,color:t.textSub,margin:0}}>{a.user}</p>
-                          <p style={{fontSize:11,color:t.textMuted,margin:"2px 0 0",lineHeight:1.4}}>{a.txt}</p>
-                        </div>
+                  {/* Mini resumen numérico */}
+                  <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:18}}>
+                    <h3 style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Esta semana</h3>
+                    {[
+                      {label:"Registros cerrados",value:"4 / 5",color:t.yellow},
+                      {label:"Fotos enviadas",    value:"23",   color:t.green},
+                      {label:"Alertas resueltas", value:"1 / 3",color:t.red},
+                    ].map((row,i)=>(
+                      <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:i<2?`1px solid ${t.border}`:"none"}}>
+                        <span style={{fontSize:12,color:t.textMuted}}>{row.label}</span>
+                        <span style={{fontSize:13,fontWeight:700,color:row.color}}>{row.value}</span>
                       </div>
                     ))}
                   </div>
@@ -416,14 +468,16 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
             <RegistroDiario t={t}/>
           )}
 
-          {(activeTab==="materiales"||activeTab==="mandante")&&(
+          {activeTab==="materiales"&&(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:400,gap:16}}>
-              <div style={{fontSize:48}}>{activeTab==="materiales"?"📦":"👁️"}</div>
-              <h2 style={{fontSize:20,fontWeight:700,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>
-                {{materiales:"Control de Materiales",mandante:"Portal Mandante"}[activeTab]}
-              </h2>
+              <div style={{fontSize:48}}>📦</div>
+              <h2 style={{fontSize:20,fontWeight:700,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Control de Materiales</h2>
               <p style={{color:t.textMuted,fontSize:14,textAlign:"center",maxWidth:300}}>Próxima pantalla — en construcción 🚧</p>
             </div>
+          )}
+
+          {activeTab==="mandante"&&(
+            <PortalMandante t={t}/>
           )}
         </div>
       </div>
@@ -432,56 +486,349 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
 }
 
 
-function PersonalSelector({t}) {
-  const pares = [2,4,6,8,10,12,14,16,18,20];
-  const [sel,setSel] = React.useState(14);
-  const [manual,setManual] = React.useState(false);
-  const [valor,setValor] = React.useState("");
+// ── PORTAL MANDANTE DATA ─────────────────────────────────────────
+const HITOS_PM = [
+  {label:"Fundaciones",   fecha:"15 Ene 2026", completado:true},
+  {label:"Estructura",    fecha:"30 Mar 2026", completado:false, actual:true},
+  {label:"Terminaciones", fecha:"28 May 2026", completado:false},
+  {label:"Entrega final", fecha:"15 Jun 2026", completado:false},
+];
+const AVANCE_PARTIDAS_PM = [
+  {partida:"Fundaciones",   real:100, plan:100},
+  {partida:"Estructura",    real:85,  plan:90},
+  {partida:"Albañilería",   real:60,  plan:75},
+  {partida:"Instalaciones", real:40,  plan:40},
+  {partida:"Terminaciones", real:10,  plan:5},
+];
+const CALENDARIO_PM = [
+  {fecha:"Lun 9 Mar", tieneRegistro:true, esFinDeSemana:false, clima:"☀️", personal:14,
+   fotos:[{emoji:"🏗️",hora:"08:42",desc:"Inicio moldaje losa nivel 3 — sector norte"},{emoji:"⚙️",hora:"10:15",desc:"Armado de fierro completado en vigas principales"},{emoji:"🔨",hora:"14:30",desc:"Hormigonado en proceso — 14 m³ vaciados"}],
+   actividades:"Se completó el hormigonado de losa nivel 3. El armado de fierro en vigas finalizó antes de lo programado. Condiciones climáticas favorables durante toda la jornada."},
+  {fecha:"Dom 8 Mar", tieneRegistro:false, esFinDeSemana:true},
+  {fecha:"Sáb 7 Mar", tieneRegistro:false, esFinDeSemana:true},
+  {fecha:"Vie 6 Mar", tieneRegistro:true, esFinDeSemana:false, clima:"⛅", personal:12,
+   fotos:[{emoji:"🧱",hora:"09:00",desc:"Albañilería 2do piso, avance sector sur"},{emoji:"⚡",hora:"15:30",desc:"Instalación eléctrica 3er piso completada"}],
+   actividades:"Avance en albañilería segundo piso sector sur. Instalación eléctrica tercer piso aprobada por inspector en visita de tarde."},
+  {fecha:"Jue 5 Mar", tieneRegistro:false, esFinDeSemana:false},
+  {fecha:"Mié 4 Mar", tieneRegistro:true, esFinDeSemana:false, clima:"🌧️", personal:8,
+   fotos:[],
+   actividades:"Jornada parcial debido a lluvia intensa desde las 11:00 hrs. Se realizaron trabajos interiores en instalaciones sanitarias nivel 1. Personal reducido por condiciones climáticas."},
+  {fecha:"Mar 3 Mar", tieneRegistro:true, esFinDeSemana:false, clima:"🌧️", personal:6,
+   fotos:[{emoji:"🪣",hora:"08:00",desc:"Trabajos interiores — protección de materiales"}],
+   actividades:"Lluvia desde el inicio de la jornada. Se priorizaron trabajos de protección de materiales y avance en instalaciones interiores."},
+];
+function getPMColor(real,plan,t){
+  const d=plan-real;
+  if(d<=5)  return {color:t.green, icon:"●", bg:t.green+"18",  border:t.green+"33"};
+  if(d<=15) return {color:t.yellow,icon:"◐", bg:t.yellow+"18", border:t.yellow+"33"};
+  return          {color:t.red,   icon:"○", bg:t.red+"18",    border:t.red+"33"};
+}
 
-  const handleManual = (v) => {
-    const n = parseInt(v);
-    setValor(v);
-    if(!isNaN(n) && n>0) setSel(n);
-  };
+function PortalMandante({t}) {
+  const [tab,setTab] = React.useState("resumen");
+  const [diaAbierto,setDiaAbierto] = React.useState(0);
+  const [fotoSel,setFotoSel] = React.useState(null);
+  const avanceReal=67, avancePlan=75;
+  const alerta = getPMColor(avanceReal,avancePlan,t);
+
+  return (
+    <div style={{animation:"fadeIn 0.3s ease"}}>
+      {/* Header limpio */}
+      <div style={{background:`linear-gradient(135deg,${t.blue}10,${t.blue}04)`,border:`1px solid ${t.blue}22`,borderRadius:20,padding:"22px 26px",marginBottom:22,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div style={{width:52,height:52,borderRadius:16,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,boxShadow:`0 4px 16px ${t.blue}44`}}>🏗️</div>
+          <div>
+            <h2 style={{fontSize:20,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Edificio Los Aromos</h2>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:3}}>
+              <span style={{fontSize:11,color:t.textMuted}}>📍 Santiago Centro</span>
+              <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:t.green+"22",color:t.green}}>● En ejecución</span>
+            </div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:11,color:t.textMuted}}>🔗</span>
+            <code style={{fontSize:11,color:t.blue,fontWeight:700}}>obraclara.cl/m/a7x9kp</code>
+          </div>
+          <button style={{background:t.bgCard2,border:`1px solid ${t.border}`,borderRadius:12,padding:"8px 14px",color:t.textSub,fontSize:12,fontWeight:600,cursor:"pointer"}}>📋 Copiar link</button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",gap:6,marginBottom:22,background:t.bgCard,borderRadius:14,padding:5,border:`1px solid ${t.border}`}}>
+        {[{id:"resumen",label:"📊 Resumen"},{id:"calendario",label:"📅 Registro diario"},{id:"informe",label:"🤖 Informe semanal"}].map(tb=>(
+          <button key={tb.id} onClick={()=>setTab(tb.id)}
+            style={{flex:1,padding:"10px 8px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,transition:"all 0.2s",
+              background:tab===tb.id?`linear-gradient(135deg,${t.blue},${t.blueDark})`:"transparent",
+              color:tab===tb.id?"#fff":t.textMuted}}>
+            {tb.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── RESUMEN ── */}
+      {tab==="resumen"&&(
+        <div style={{animation:"fadeIn 0.25s ease"}}>
+          {/* Avance general */}
+          <div style={{background:alerta.bg,border:`1px solid ${alerta.border}`,borderRadius:20,padding:24,marginBottom:20,display:"flex",alignItems:"center",gap:24}}>
+            <div style={{position:"relative",width:100,height:100,flexShrink:0}}>
+              <svg viewBox="0 0 100 100" style={{transform:"rotate(-90deg)",width:100,height:100}}>
+                <circle cx="50" cy="50" r="40" fill="none" stroke={t.border} strokeWidth="9"/>
+                <circle cx="50" cy="50" r="40" fill="none" stroke={alerta.color} strokeWidth="9" strokeLinecap="round" strokeDasharray={`${2*Math.PI*40*avancePlan/100} ${2*Math.PI*40}`} opacity="0.25"/>
+                <circle cx="50" cy="50" r="40" fill="none" stroke={alerta.color} strokeWidth="9" strokeLinecap="round" strokeDasharray={`${2*Math.PI*40*avanceReal/100} ${2*Math.PI*40}`}/>
+              </svg>
+              <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                <span style={{fontSize:22,fontWeight:800,color:alerta.color,fontFamily:"'Sora',sans-serif"}}>{avanceReal}%</span>
+                <span style={{fontSize:9,color:t.textMuted}}>avance</span>
+              </div>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:22,color:alerta.color}}>{alerta.icon}</span>
+                <span style={{fontSize:16,fontWeight:800,color:t.text,fontFamily:"'Sora',sans-serif"}}>Avance general</span>
+              </div>
+              <p style={{fontSize:13,color:t.textSub,margin:"0 0 12px",lineHeight:1.6}}>Avance real <strong style={{color:alerta.color}}>{avanceReal}%</strong> · Plan programado <strong style={{color:t.text}}>{avancePlan}%</strong></p>
+              <div style={{height:8,background:t.border,borderRadius:4,overflow:"hidden",position:"relative"}}>
+                <div style={{position:"absolute",height:"100%",width:avancePlan+"%",background:t.border+"99",borderRadius:4}}/>
+                <div style={{position:"absolute",height:"100%",width:avanceReal+"%",background:alerta.color,borderRadius:4,transition:"width 1s"}}/>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:5}}>
+                <span style={{fontSize:10,color:t.textMuted}}>0%</span>
+                <span style={{fontSize:10,color:t.textMuted,fontWeight:600}}>Plan: {avancePlan}%</span>
+                <span style={{fontSize:10,color:t.textMuted}}>100%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Partidas */}
+          <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:22,marginBottom:20,boxShadow:t.shadow}}>
+            <h3 style={{fontSize:13,fontWeight:700,color:t.text,marginBottom:18,fontFamily:"'Sora',sans-serif"}}>Avance por partidas</h3>
+            {AVANCE_PARTIDAS_PM.map((p,i)=>{
+              const a=getPMColor(p.real,p.plan,t);
+              return(
+                <div key={i} style={{marginBottom:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7}}>
+                      <span style={{fontSize:14,color:a.color}}>{a.icon}</span>
+                      <span style={{fontSize:13,color:t.textSub}}>{p.partida}</span>
+                    </div>
+                    <span style={{fontSize:13,fontWeight:700,color:a.color}}>{p.real}% <span style={{fontSize:10,color:t.textMuted,fontWeight:400}}>/ {p.plan}%</span></span>
+                  </div>
+                  <div style={{height:6,background:t.border,borderRadius:3,overflow:"hidden",position:"relative"}}>
+                    <div style={{position:"absolute",height:"100%",width:p.plan+"%",background:t.border+"99",borderRadius:3}}/>
+                    <div style={{position:"absolute",height:"100%",width:p.real+"%",background:a.color,borderRadius:3,transition:"width 1s"}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Hitos */}
+          <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:22,boxShadow:t.shadow}}>
+            <h3 style={{fontSize:13,fontWeight:700,color:t.text,marginBottom:20,fontFamily:"'Sora',sans-serif"}}>Hitos del proyecto</h3>
+            <div style={{position:"relative",paddingLeft:24}}>
+              <div style={{position:"absolute",left:9,top:8,bottom:8,width:2,background:t.border}}/>
+              {HITOS_PM.map((h,i)=>(
+                <div key={i} style={{position:"relative",marginBottom:22,paddingLeft:18}}>
+                  <div style={{position:"absolute",left:-15,top:2,width:16,height:16,borderRadius:"50%",background:h.completado?t.green:h.actual?t.blue:t.border,border:`2px solid ${h.completado?t.green:h.actual?t.blue:t.border}`,boxShadow:h.actual?`0 0 0 4px ${t.blue}28`:""}}/>
+                  <p style={{fontSize:14,fontWeight:h.actual?700:500,color:h.completado?t.green:h.actual?t.text:t.textMuted,margin:0}}>{h.label}</p>
+                  <p style={{fontSize:11,color:h.completado?t.green:h.actual?t.blue:t.textMuted,margin:"2px 0 0",fontWeight:h.actual?600:400}}>{h.completado?"✓ Completado":h.actual?"● En curso · "+h.fecha:h.fecha}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CALENDARIO ── */}
+      {tab==="calendario"&&(
+        <div style={{animation:"fadeIn 0.25s ease"}}>
+          <p style={{fontSize:12,color:t.textMuted,marginBottom:16}}>Registro día a día de actividades, fotos y condiciones en obra.</p>
+          {CALENDARIO_PM.map((dia,i)=>{
+            const abierto=diaAbierto===i;
+            const esHoy=i===0;
+            return(
+              <div key={i} style={{marginBottom:8}}>
+                <div onClick={()=>!dia.esFinDeSemana&&setDiaAbierto(abierto?-1:i)}
+                  style={{background:dia.esFinDeSemana?t.bgCard2:t.bgCard,border:`1px solid ${abierto?t.blue+"55":t.border}`,borderRadius:abierto?"14px 14px 0 0":14,padding:"13px 18px",display:"flex",alignItems:"center",gap:14,cursor:dia.esFinDeSemana?"default":"pointer",opacity:dia.esFinDeSemana?0.5:1,transition:"all 0.15s"}}>
+                  <div style={{width:44,flexShrink:0,textAlign:"center"}}>
+                    <p style={{fontSize:12,fontWeight:700,color:esHoy?t.blue:t.text,margin:0}}>{dia.fecha.split(" ")[0]}</p>
+                    <p style={{fontSize:10,color:t.textMuted,margin:0}}>{dia.fecha.split(" ").slice(1).join(" ")}</p>
+                  </div>
+                  {dia.esFinDeSemana?(
+                    <span style={{fontSize:11,color:t.textMuted,flex:1}}>Fin de semana</span>
+                  ):dia.tieneRegistro?(
+                    <>
+                      <span style={{fontSize:16}}>{dia.clima}</span>
+                      <p style={{fontSize:12,color:t.textSub,margin:0,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:340}}>{dia.actividades}</p>
+                      <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+                        {dia.fotos.length>0&&<span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:20,background:t.green+"22",color:t.green}}>📸 {dia.fotos.length}</span>}
+                        <span style={{fontSize:11,color:t.textMuted}}>👷 {dia.personal}</span>
+                        {esHoy&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:t.blue+"22",color:t.blue}}>HOY</span>}
+                        <span style={{fontSize:14,color:t.textMuted,display:"inline-block",transform:abierto?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}>▾</span>
+                      </div>
+                    </>
+                  ):(
+                    <>
+                      <span style={{flex:1,fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:t.red+"18",color:t.red,display:"inline-block",maxWidth:120}}>Sin registro</span>
+                      <span style={{fontSize:14,color:t.textMuted,marginLeft:"auto",display:"inline-block",transform:abierto?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}>▾</span>
+                    </>
+                  )}
+                </div>
+                {abierto&&!dia.esFinDeSemana&&(
+                  <div style={{background:t.bgCard,border:`1px solid ${t.blue}33`,borderTop:"none",borderRadius:"0 0 14px 14px",padding:"16px 20px",animation:"fadeIn 0.2s ease"}}>
+                    {dia.tieneRegistro?(
+                      <>
+                        <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+                          <div style={{background:t.bgCard2,borderRadius:12,padding:"9px 14px",display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{fontSize:17}}>{dia.clima}</span>
+                            <span style={{fontSize:12,color:t.textSub}}>Condición climática</span>
+                          </div>
+                          <div style={{background:t.bgCard2,borderRadius:12,padding:"9px 14px",display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{fontSize:15}}>👷</span>
+                            <span style={{fontSize:12,color:t.textSub}}><strong style={{color:t.text}}>{dia.personal}</strong> personas en obra</span>
+                          </div>
+                        </div>
+                        <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:8}}>Actividades del día</p>
+                        <p style={{fontSize:13,color:t.textSub,margin:"0 0 16px",lineHeight:1.7,padding:"12px 16px",background:t.bgCard2,borderRadius:12}}>{dia.actividades}</p>
+                        {dia.fotos.length>0&&(
+                          <>
+                            <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:10}}>Fotos del día</p>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                              {dia.fotos.map((f,j)=>(
+                                <div key={j} onClick={()=>setFotoSel(f)}
+                                  style={{background:t.bgCard2,borderRadius:12,padding:"12px 8px",textAlign:"center",cursor:"pointer",border:`1px solid ${t.border}`,transition:"all 0.15s"}}
+                                  onMouseEnter={e=>e.currentTarget.style.borderColor=t.blue+"66"}
+                                  onMouseLeave={e=>e.currentTarget.style.borderColor=t.border}>
+                                  <div style={{fontSize:28,marginBottom:5}}>{f.emoji}</div>
+                                  <p style={{fontSize:9,color:t.textMuted,margin:"0 0 2px"}}>{f.hora}</p>
+                                  <p style={{fontSize:10,color:t.textSub,margin:0,lineHeight:1.3,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{f.desc}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    ):(
+                      <p style={{fontSize:13,color:t.textMuted,margin:0,textAlign:"center",padding:"8px 0"}}>El jefe de terreno no realizó registro en este día.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal foto */}
+      {fotoSel&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setFotoSel(null)}>
+          <div style={{background:t.bgCard,borderRadius:24,overflow:"hidden",maxWidth:420,width:"100%",boxShadow:"0 40px 120px rgba(0,0,0,0.6)"}} onClick={e=>e.stopPropagation()}>
+            <div style={{height:200,background:`linear-gradient(135deg,${t.bgCard2},${t.border}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:72}}>{fotoSel.emoji}</div>
+            <div style={{padding:22}}>
+              <p style={{fontSize:12,color:t.textMuted,margin:"0 0 6px"}}>{fotoSel.hora}</p>
+              <p style={{fontSize:14,color:t.text,margin:0,lineHeight:1.6}}>{fotoSel.desc}</p>
+              <button onClick={()=>setFotoSel(null)} style={{width:"100%",marginTop:18,padding:"11px",background:t.bgCard2,border:`1px solid ${t.border}`,borderRadius:12,color:t.textSub,fontSize:13,cursor:"pointer"}}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── INFORME IA ── */}
+      {tab==="informe"&&(
+        <div style={{animation:"fadeIn 0.25s ease"}}>
+          <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:20,overflow:"hidden",boxShadow:t.shadow,marginBottom:16}}>
+            <div style={{background:`linear-gradient(135deg,${t.blue}12,${t.blue}05)`,padding:"20px 24px",borderBottom:`1px solid ${t.border}`,display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:42,height:42,borderRadius:12,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🤖</div>
+              <div>
+                <h3 style={{fontSize:15,fontWeight:700,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Informe Semanal</h3>
+                <p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>Semana del 3 al 9 de marzo 2026 · Generado automáticamente</p>
+              </div>
+            </div>
+            <div style={{padding:"22px 24px"}}>
+              <div style={{borderLeft:`4px solid ${t.blue}`,paddingLeft:16,marginBottom:22}}>
+                <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:10}}>Resumen de la semana</p>
+                <p style={{fontSize:14,color:t.textSub,margin:0,lineHeight:1.8}}>Durante la semana del 3 al 9 de marzo se registraron <strong style={{color:t.text}}>4 jornadas de trabajo</strong> sobre 5 días hábiles. El avance acumulado de la obra se encuentra en <strong style={{color:alerta.color}}>{avanceReal}%</strong>, con un plan programado de <strong style={{color:t.text}}>{avancePlan}%</strong>.</p>
+              </div>
+              <div style={{marginBottom:22}}>
+                <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Actividades realizadas</p>
+                {[
+                  {dia:"Lunes 9",    clima:"☀️", texto:"Hormigonado de losa nivel 3 completado (14 m³). Armado de fierro en vigas finalizado."},
+                  {dia:"Viernes 6",  clima:"⛅", texto:"Avance en albañilería segundo piso sector sur. Instalación eléctrica tercer piso completada."},
+                  {dia:"Miércoles 4",clima:"🌧️", texto:"Jornada parcial por lluvia intensa desde las 11:00 hrs. Trabajos interiores en instalaciones sanitarias."},
+                  {dia:"Martes 3",   clima:"🌧️", texto:"Jornada reducida por lluvia. Trabajos de protección de materiales y avance en instalaciones interiores."},
+                ].map((a,i)=>(
+                  <div key={i} style={{display:"flex",gap:12,padding:"11px 0",borderBottom:i<3?`1px solid ${t.border}`:"none"}}>
+                    <div style={{flexShrink:0,width:90}}>
+                      <p style={{fontSize:11,fontWeight:700,color:t.text,margin:0}}>{a.dia}</p>
+                      <p style={{fontSize:13,margin:"2px 0 0"}}>{a.clima}</p>
+                    </div>
+                    <p style={{fontSize:13,color:t.textSub,margin:0,lineHeight:1.6}}>{a.texto}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{background:t.red+"10",border:`1px solid ${t.red}22`,borderRadius:12,padding:"12px 16px",marginBottom:22}}>
+                <p style={{fontSize:12,color:t.red,fontWeight:600,margin:"0 0 3px"}}>Sin registro</p>
+                <p style={{fontSize:12,color:t.textSub,margin:0}}>Jueves 5 de marzo no cuenta con registro de actividades.</p>
+              </div>
+              <div>
+                <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Estado de partidas al cierre de semana</p>
+                {AVANCE_PARTIDAS_PM.map((p,i)=>{
+                  const a=getPMColor(p.real,p.plan,t);
+                  return(
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<AVANCE_PARTIDAS_PM.length-1?`1px solid ${t.border}`:"none"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:14,color:a.color}}>{a.icon}</span>
+                        <span style={{fontSize:13,color:t.textSub}}>{p.partida}</span>
+                      </div>
+                      <span style={{fontSize:13,fontWeight:700,color:a.color}}>{p.real}% <span style={{fontSize:10,color:t.textMuted,fontWeight:400}}>/ {p.plan}% plan</span></span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button style={{flex:1,padding:"12px",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:14,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:`0 4px 16px ${t.blue}44`}}>📥 Descargar PDF</button>
+            <button style={{flex:1,padding:"12px",background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:14,color:t.textSub,fontSize:13,fontWeight:600,cursor:"pointer"}}>📧 Enviar por email</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PersonalSelector({t}) {
+  const AYER = 14; // precargado del día anterior
+  const [n, setN] = React.useState(AYER);
+  const inc = () => setN(v => v+1);
+  const dec = () => setN(v => Math.max(1,v-1));
+  const handleInput = (v) => { const p=parseInt(v); if(!isNaN(p)&&p>0) setN(p); };
+  const cambio = n - AYER;
 
   return (
     <div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
-        {pares.map(n=>(
-          <button key={n} className="mob-btn" onClick={()=>{setSel(n);setManual(false);setValor("");}}
-            style={{padding:"9px 14px",borderRadius:12,
-              background:sel===n&&!manual?`linear-gradient(135deg,${t.blue},${t.blueDark})`:t.bgCard2,
-              border:sel===n&&!manual?"none":`1px solid ${t.border}`,
-              color:sel===n&&!manual?"#fff":t.textSub,
-              fontSize:14,fontWeight:700,cursor:"pointer",minWidth:44}}>
-            {n}
-          </button>
-        ))}
-        <button className="mob-btn" onClick={()=>{setManual(true);setSel(null);}}
-          style={{padding:"9px 14px",borderRadius:12,
-            background:manual?`linear-gradient(135deg,${t.yellow},#D97706)`:t.bgCard2,
-            border:manual?"none":`1px solid ${t.border}`,
-            color:manual?"#fff":t.textMuted,
-            fontSize:13,fontWeight:700,cursor:"pointer"}}>
-          ✏️ Otro
-        </button>
-      </div>
-      {manual&&(
-        <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
-          <input type="number" min={1} placeholder="Ej: 7" value={valor} onChange={e=>handleManual(e.target.value)}
-            autoFocus
-            style={{width:90,padding:"10px 14px",background:t.inputBg,
-              border:`1.5px solid ${t.yellow}`,borderRadius:12,color:t.text,
-              fontSize:16,fontWeight:700,textAlign:"center",
+      <div style={{display:"flex",alignItems:"center",gap:14}}>
+        <button className="mob-btn" onClick={dec}
+          style={{width:48,height:48,borderRadius:14,background:t.bgCard2,border:`1px solid ${t.border}`,fontSize:22,fontWeight:700,color:t.textSub,cursor:"pointer",flexShrink:0}}>−</button>
+        <div style={{flex:1,textAlign:"center"}}>
+          <input type="number" value={n} onChange={e=>handleInput(e.target.value)} min={1}
+            style={{width:"100%",background:"transparent",border:"none",color:t.text,
+              fontSize:40,fontWeight:800,textAlign:"center",
               fontFamily:"'Sora',sans-serif",outline:"none"}}/>
-          <span style={{fontSize:13,color:t.textMuted}}>trabajadores</span>
+          <p style={{fontSize:11,color:t.textMuted,margin:0}}>personas en obra hoy</p>
         </div>
-      )}
-      {sel&&(
-        <p style={{fontSize:11,color:t.textMuted,marginTop:8}}>
-          {manual?"Número personalizado:":"Seleccionado:"} <strong style={{color:t.blue}}>{sel} trabajadores</strong>
-        </p>
-      )}
+        <button className="mob-btn" onClick={inc}
+          style={{width:48,height:48,borderRadius:14,background:t.bgCard2,border:`1px solid ${t.border}`,fontSize:22,fontWeight:700,color:t.textSub,cursor:"pointer",flexShrink:0}}>+</button>
+      </div>
+      <div style={{marginTop:12,textAlign:"center"}}>
+        {cambio===0
+          ? <span style={{fontSize:11,color:t.textMuted}}>Igual que ayer ({AYER} personas)</span>
+          : <span style={{fontSize:11,fontWeight:700,color:cambio>0?t.green:t.yellow}}>
+              {cambio>0?`+${cambio}`:`${cambio}`} respecto a ayer · ayer fueron {AYER}
+            </span>
+        }
+      </div>
     </div>
   );
 }
