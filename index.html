@@ -432,6 +432,60 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
 }
 
 
+function PersonalSelector({t}) {
+  const pares = [2,4,6,8,10,12,14,16,18,20];
+  const [sel,setSel] = React.useState(14);
+  const [manual,setManual] = React.useState(false);
+  const [valor,setValor] = React.useState("");
+
+  const handleManual = (v) => {
+    const n = parseInt(v);
+    setValor(v);
+    if(!isNaN(n) && n>0) setSel(n);
+  };
+
+  return (
+    <div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+        {pares.map(n=>(
+          <button key={n} className="mob-btn" onClick={()=>{setSel(n);setManual(false);setValor("");}}
+            style={{padding:"9px 14px",borderRadius:12,
+              background:sel===n&&!manual?`linear-gradient(135deg,${t.blue},${t.blueDark})`:t.bgCard2,
+              border:sel===n&&!manual?"none":`1px solid ${t.border}`,
+              color:sel===n&&!manual?"#fff":t.textSub,
+              fontSize:14,fontWeight:700,cursor:"pointer",minWidth:44}}>
+            {n}
+          </button>
+        ))}
+        <button className="mob-btn" onClick={()=>{setManual(true);setSel(null);}}
+          style={{padding:"9px 14px",borderRadius:12,
+            background:manual?`linear-gradient(135deg,${t.yellow},#D97706)`:t.bgCard2,
+            border:manual?"none":`1px solid ${t.border}`,
+            color:manual?"#fff":t.textMuted,
+            fontSize:13,fontWeight:700,cursor:"pointer"}}>
+          ✏️ Otro
+        </button>
+      </div>
+      {manual&&(
+        <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
+          <input type="number" min={1} placeholder="Ej: 7" value={valor} onChange={e=>handleManual(e.target.value)}
+            autoFocus
+            style={{width:90,padding:"10px 14px",background:t.inputBg,
+              border:`1.5px solid ${t.yellow}`,borderRadius:12,color:t.text,
+              fontSize:16,fontWeight:700,textAlign:"center",
+              fontFamily:"'Sora',sans-serif",outline:"none"}}/>
+          <span style={{fontSize:13,color:t.textMuted}}>trabajadores</span>
+        </div>
+      )}
+      {sel&&(
+        <p style={{fontSize:11,color:t.textMuted,marginTop:8}}>
+          {manual?"Número personalizado:":"Seleccionado:"} <strong style={{color:t.blue}}>{sel} trabajadores</strong>
+        </p>
+      )}
+    </div>
+  );
+}
+
 function FotoRapidaModal({t,onClose,onEnviar}) {
   const emojis = ["🏗️","⚙️","🔨","🧱","⚡","🔧","🪵","🪣","🔩","🪜"];
   const [paso,setPaso] = React.useState("elegir"); // "elegir" | "camara" | "galeria" | "confirmar"
@@ -794,11 +848,7 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
               </div>
               <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:16,marginBottom:12}}>
                 <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Personal en obra</p>
-                <div style={{display:"flex",gap:8}}>
-                  {["8","10","12","14","16"].map((n,i)=>(
-                    <button key={i} className="mob-btn" style={{flex:1,padding:"10px 0",background:n==="14"?`linear-gradient(135deg,${t.blue},${t.blueDark})`:t.bgCard2,border:n==="14"?"none":`1px solid ${t.border}`,borderRadius:12,color:n==="14"?"#fff":t.textSub,fontSize:14,fontWeight:700,cursor:"pointer"}}>{n}</button>
-                  ))}
-                </div>
+                <PersonalSelector t={t}/>
               </div>
               <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:16,marginBottom:14}}>
                 <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:10}}>Actividades del día</p>
