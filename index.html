@@ -412,11 +412,15 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
             </div>
           )}
 
-          {(activeTab==="registro"||activeTab==="materiales"||activeTab==="mandante")&&(
+          {activeTab==="registro"&&(
+            <RegistroDiario t={t}/>
+          )}
+
+          {(activeTab==="materiales"||activeTab==="mandante")&&(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:400,gap:16}}>
-              <div style={{fontSize:48}}>{activeTab==="registro"?"✏️":activeTab==="materiales"?"📦":"👁️"}</div>
+              <div style={{fontSize:48}}>{activeTab==="materiales"?"📦":"👁️"}</div>
               <h2 style={{fontSize:20,fontWeight:700,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>
-                {{registro:"Registro Diario",materiales:"Control de Materiales",mandante:"Portal Mandante"}[activeTab]}
+                {{materiales:"Control de Materiales",mandante:"Portal Mandante"}[activeTab]}
               </h2>
               <p style={{color:t.textMuted,fontSize:14,textAlign:"center",maxWidth:300}}>Próxima pantalla — en construcción 🚧</p>
             </div>
@@ -559,6 +563,279 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
   );
 }
 
+// ── REGISTRO DIARIO ─────────────────────────────────────────
+const OBRAS_RD = ["Edif. Los Aromos","Cond. El Roble","Casa Familia Torres"];
+const CLIMAS_RD = [{icon:"☀️",label:"Despejado"},{icon:"⛅",label:"Nublado parcial"},{icon:"☁️",label:"Nublado"},{icon:"🌧️",label:"Lluvia"},{icon:"⛈️",label:"Tormenta"},{icon:"🌬️",label:"Viento fuerte"},{icon:"🌫️",label:"Neblina"}];
+const GREMIOS_RD = ["Albañilería","Estructura","Moldaje","Hormigonado","Gasfitería","Electricidad","Pintura","Carpintería","Terminaciones"];
+const PARTIDAS_RD = ["Fundaciones","Estructura","Albañilería","Instalaciones eléctricas","Instalaciones sanitarias","Moldaje y hormigón","Terminaciones","Pintura","Pavimentos"];
+const UNIDADES_RD = ["m³","m²","ml","kg","ton","und","gl","sacos","viajes"];
+const PASOS_RD = [{id:1,label:"General",icon:"📋"},{id:2,label:"Personal",icon:"👷"},{id:3,label:"Actividades",icon:"✏️"},{id:4,label:"Materiales",icon:"📦"},{id:5,label:"Observaciones",icon:"📝"}];
+const initForm = () => ({obra:OBRAS_RD[0],fecha:new Date().toISOString().split("T")[0],clima:0,temperatura:"",personalTotal:14,cuadrillas:[{gremio:"Albañilería",cantidad:6}],actividades:[{partida:"Albañilería",descripcion:"",avance:0}],materiales:[{nombre:"",cantidad:"",unidad:"m³",observacion:""}],equipos:"",incidentes:"",observaciones:""});
+
+function RDInput({label,value,onChange,type="text",placeholder="",style={}}) {
+  return (
+    <div style={{marginBottom:14,...style}}>
+      {label&&<label style={{fontSize:11,fontWeight:600,color:"#8899BB",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</label>}
+      <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+        style={{width:"100%",padding:"11px 14px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",boxSizing:"border-box",transition:"border 0.2s"}}
+        onFocus={e=>e.target.style.border="1.5px solid #3B82F6"}
+        onBlur={e=>e.target.style.border="1.5px solid #1e2d45"}/>
+    </div>
+  );
+}
+
+function RDTextarea({label,value,onChange,placeholder,rows=3}) {
+  return (
+    <div style={{marginBottom:14}}>
+      {label&&<label style={{fontSize:11,fontWeight:600,color:"#8899BB",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</label>}
+      <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
+        style={{width:"100%",padding:"11px 14px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",boxSizing:"border-box"}}
+        onFocus={e=>e.target.style.border="1.5px solid #3B82F6"}
+        onBlur={e=>e.target.style.border="1.5px solid #1e2d45"}/>
+    </div>
+  );
+}
+
+function RDCard({title,icon,children}) {
+  return (
+    <div style={{background:"#111827",border:"1px solid #1e2d45",borderRadius:20,marginBottom:16,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+      <div style={{padding:"14px 20px",borderBottom:"1px solid #1e2d45",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:17}}>{icon}</span>
+        <span style={{fontSize:13,fontWeight:700,color:"#F0F4FF",fontFamily:"'Sora',sans-serif"}}>{title}</span>
+      </div>
+      <div style={{padding:"18px 20px"}}>{children}</div>
+    </div>
+  );
+}
+
+function RegistroDiario({t}) {
+  const [paso,setPaso] = React.useState(1);
+  const [form,setForm] = React.useState(initForm());
+  const [vista,setVista] = React.useState("form");
+
+  const addCuadrilla = () => setForm({...form,cuadrillas:[...form.cuadrillas,{gremio:GREMIOS_RD[0],cantidad:0}]});
+  const remCuadrilla = i => setForm({...form,cuadrillas:form.cuadrillas.filter((_,j)=>j!==i)});
+  const setCuad = (i,f,v) => { const a=[...form.cuadrillas]; a[i]={...a[i],[f]:v}; setForm({...form,cuadrillas:a}); };
+  const addAct = () => setForm({...form,actividades:[...form.actividades,{partida:PARTIDAS_RD[0],descripcion:"",avance:0}]});
+  const remAct = i => setForm({...form,actividades:form.actividades.filter((_,j)=>j!==i)});
+  const setAct = (i,f,v) => { const a=[...form.actividades]; a[i]={...a[i],[f]:v}; setForm({...form,actividades:a}); };
+  const addMat = () => setForm({...form,materiales:[...form.materiales,{nombre:"",cantidad:"",unidad:"m³",observacion:""}]});
+  const remMat = i => setForm({...form,materiales:form.materiales.filter((_,j)=>j!==i)});
+  const setMat = (i,f,v) => { const a=[...form.materiales]; a[i]={...a[i],[f]:v}; setForm({...form,materiales:a}); };
+  const totalCalc = form.cuadrillas.reduce((s,c)=>s+(+c.cantidad||0),0);
+
+  const sel = (v,cur,col) => ({padding:"11px 12px",background:"#0D1420",border:`1.5px solid ${v===cur?"#3B82F6":"#1e2d45"}`,borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",width:"100%"});
+
+  if(vista==="exito") return (
+    <div style={{textAlign:"center",padding:"40px 20px",animation:"fadeIn 0.5s ease"}}>
+      <div style={{width:80,height:80,borderRadius:"50%",margin:"0 auto 24px",background:"linear-gradient(135deg,#10B981,#059669)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,boxShadow:"0 8px 32px #10B98144"}}>✓</div>
+      <h2 style={{fontSize:22,fontWeight:800,color:t.text,margin:"0 0 10px",fontFamily:"'Sora',sans-serif"}}>¡Registro guardado!</h2>
+      <p style={{fontSize:13,color:t.textSub,margin:"0 0 6px"}}>{form.obra} · {new Date(form.fecha+"T12:00").toLocaleDateString("es-CL",{day:"numeric",month:"long"})}</p>
+      <p style={{fontSize:12,color:t.textMuted,margin:"0 0 28px"}}>{form.actividades.length} actividades · {form.personalTotal} personas · {CLIMAS_RD[form.clima].icon}</p>
+      <div style={{background:"#3B82F618",border:"1px solid #3B82F633",borderRadius:14,padding:16,marginBottom:24}}>
+        <p style={{fontSize:13,color:"#3B82F6",fontWeight:600,margin:"0 0 6px"}}>🤖 La IA ya está procesando el reporte</p>
+        <p style={{fontSize:11,color:t.textMuted,margin:0}}>El mandante recibirá el resumen automático el lunes</p>
+      </div>
+      <div style={{display:"flex",gap:12}}>
+        <button onClick={()=>{setForm(initForm());setPaso(1);setVista("form");}} style={{flex:1,padding:"13px",background:"linear-gradient(135deg,#3B82F6,#1D4ED8)",border:"none",borderRadius:14,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>+ Nuevo registro</button>
+        <button style={{flex:1,padding:"13px",background:"#111827",border:"1px solid #1e2d45",borderRadius:14,color:"#8899BB",fontSize:14,cursor:"pointer"}}>Ver historial</button>
+      </div>
+    </div>
+  );
+
+  if(vista==="resumen") return (
+    <div style={{animation:"fadeIn 0.3s ease"}}>
+      <div style={{background:"#3B82F618",border:"1px solid #3B82F633",borderRadius:20,padding:22,marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+        <span style={{fontSize:22}}>📋</span>
+        <div><h2 style={{fontSize:17,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Resumen del Registro</h2><p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>Revisa antes de guardar</p></div>
+      </div>
+      {[{label:"Obra",value:form.obra},{label:"Fecha",value:new Date(form.fecha+"T12:00").toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})},{label:"Clima",value:`${CLIMAS_RD[form.clima].icon} ${CLIMAS_RD[form.clima].label}${form.temperatura?` · ${form.temperatura}°C`:""}`},{label:"Personal",value:`${form.personalTotal} personas`},{label:"Actividades",value:`${form.actividades.length} registradas`},{label:"Materiales",value:form.materiales.filter(m=>m.nombre).length+" registrados"}].map((row,i)=>(
+        <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"11px 0",borderBottom:`1px solid ${t.border}`}}>
+          <span style={{fontSize:13,color:t.textMuted}}>{row.label}</span>
+          <span style={{fontSize:13,fontWeight:600,color:t.text}}>{row.value}</span>
+        </div>
+      ))}
+      {form.actividades.length>0&&(
+        <div style={{marginTop:14,background:t.bgCard,borderRadius:16,padding:16,border:`1px solid ${t.border}`}}>
+          <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Actividades</p>
+          {form.actividades.map((a,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<form.actividades.length-1?`1px solid ${t.border}`:"none"}}>
+              <div><p style={{fontSize:13,fontWeight:600,color:t.text,margin:0}}>{a.partida}</p>{a.descripcion&&<p style={{fontSize:11,color:t.textMuted,margin:"2px 0 0"}}>{a.descripcion}</p>}</div>
+              <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:(a.avance===100?"#10B981":a.avance>50?"#F59E0B":"#3B82F6")+"22",color:a.avance===100?"#10B981":a.avance>50?"#F59E0B":"#3B82F6"}}>{a.avance}%</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginTop:20}}>
+        <button onClick={()=>setVista("form")} style={{padding:"13px",background:t.bgCard2,border:`1px solid ${t.border}`,borderRadius:14,color:t.textSub,fontSize:14,fontWeight:600,cursor:"pointer"}}>← Editar</button>
+        <button onClick={()=>setVista("exito")} style={{padding:"13px",background:"linear-gradient(135deg,#10B981,#059669)",border:"none",borderRadius:14,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px #10B98144"}}>✓ Guardar Registro</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{animation:"fadeIn 0.3s ease"}}>
+      <style>{`input[type=range]{-webkit-appearance:none;height:6px;border-radius:3px;background:#1e2d45;}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#3B82F6;cursor:pointer;}`}</style>
+      {/* Progress */}
+      <div style={{display:"flex",gap:6,marginBottom:20}}>
+        {PASOS_RD.map(p=>(
+          <button key={p.id} onClick={()=>setPaso(p.id)} style={{flex:1,padding:"9px 4px",borderRadius:14,cursor:"pointer",border:"none",background:paso===p.id?"linear-gradient(135deg,#3B82F6,#1D4ED8)":paso>p.id?"#10B98118":`${t.bgCard}`,display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.2s"}}>
+            <span style={{fontSize:15}}>{paso>p.id?"✓":p.icon}</span>
+            <span style={{fontSize:9,fontWeight:700,color:paso===p.id?"#fff":paso>p.id?"#10B981":t.textMuted}}>{p.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Paso 1 */}
+      {paso===1&&(
+        <div>
+          <RDCard title="Información General" icon="📋">
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              <div style={{marginBottom:0}}>
+                <label style={{fontSize:11,fontWeight:600,color:"#8899BB",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>Obra</label>
+                <select value={form.obra} onChange={e=>setForm({...form,obra:e.target.value})} style={sel(form.obra,form.obra,"")}>
+                  {OBRAS_RD.map(o=><option key={o} value={o} style={{background:"#111827"}}>{o}</option>)}
+                </select>
+              </div>
+              <RDInput label="Fecha" type="date" value={form.fecha} onChange={v=>setForm({...form,fecha:v})}/>
+            </div>
+          </RDCard>
+          <RDCard title="Clima del Día" icon="🌤️">
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
+              {CLIMAS_RD.map((c,i)=>(
+                <button key={i} onClick={()=>setForm({...form,clima:i})} style={{padding:"11px 6px",borderRadius:14,cursor:"pointer",background:form.clima===i?"#3B82F622":"#1a2235",border:form.clima===i?"2px solid #3B82F6":"1px solid #1e2d45",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+                  <span style={{fontSize:20}}>{c.icon}</span>
+                  <span style={{fontSize:9,color:form.clima===i?"#3B82F6":"#445566",fontWeight:600,textAlign:"center",lineHeight:1.2}}>{c.label}</span>
+                </button>
+              ))}
+            </div>
+            <RDInput label="Temperatura (°C)" type="number" value={form.temperatura} placeholder="Ej: 18" onChange={v=>setForm({...form,temperatura:v})}/>
+          </RDCard>
+        </div>
+      )}
+
+      {/* Paso 2 */}
+      {paso===2&&(
+        <RDCard title="Personal en Obra" icon="👷">
+          <div style={{display:"flex",gap:12,marginBottom:18}}>
+            <div style={{flex:1,background:"#3B82F618",border:"1px solid #3B82F633",borderRadius:14,padding:16,textAlign:"center"}}>
+              <input type="number" value={form.personalTotal} onChange={e=>setForm({...form,personalTotal:+e.target.value})}
+                style={{width:"100%",background:"transparent",border:"none",color:"#3B82F6",fontSize:28,fontWeight:800,textAlign:"center",fontFamily:"'Sora',sans-serif",outline:"none"}}/>
+              <p style={{fontSize:10,color:"#445566",margin:0}}>Total ingresado</p>
+            </div>
+            <div style={{flex:1,background:"#10B98118",border:"1px solid #10B98133",borderRadius:14,padding:16,textAlign:"center"}}>
+              <p style={{fontSize:28,fontWeight:800,color:"#10B981",margin:0,fontFamily:"'Sora',sans-serif"}}>{totalCalc}</p>
+              <p style={{fontSize:10,color:"#445566",margin:0}}>Suma cuadrillas</p>
+            </div>
+          </div>
+          <label style={{fontSize:11,fontWeight:600,color:"#8899BB",display:"block",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.5px"}}>Cuadrillas por gremio</label>
+          {form.cuadrillas.map((c,i)=>(
+            <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+              <select value={c.gremio} onChange={e=>setCuad(i,"gremio",e.target.value)} style={{flex:2,padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none"}}>
+                {GREMIOS_RD.map(g=><option key={g} value={g} style={{background:"#111827"}}>{g}</option>)}
+              </select>
+              <input type="number" value={c.cantidad} min={0} onChange={e=>setCuad(i,"cantidad",+e.target.value)} placeholder="N°"
+                style={{flex:1,padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,outline:"none"}}/>
+              <button onClick={()=>remCuadrilla(i)} style={{background:"none",border:"none",color:"#EF4444",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>×</button>
+            </div>
+          ))}
+          <button onClick={addCuadrilla} style={{background:"none",border:"1px dashed #3B82F666",borderRadius:10,padding:"8px 14px",color:"#3B82F6",fontSize:12,fontWeight:600,cursor:"pointer",width:"100%",marginTop:6}}>+ Agregar cuadrilla</button>
+        </RDCard>
+      )}
+
+      {/* Paso 3 */}
+      {paso===3&&(
+        <RDCard title="Actividades Realizadas" icon="✏️">
+          {form.actividades.map((a,i)=>(
+            <div key={i} style={{background:"#1a2235",borderRadius:16,padding:16,marginBottom:12,border:"1px solid #1e2d45"}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+                <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#3B82F622",color:"#3B82F6"}}>Actividad {i+1}</span>
+                <button onClick={()=>remAct(i)} style={{background:"none",border:"none",color:"#EF4444",fontSize:18,cursor:"pointer"}}>×</button>
+              </div>
+              <select value={a.partida} onChange={e=>setAct(i,"partida",e.target.value)} style={{width:"100%",padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",marginBottom:10}}>
+                {PARTIDAS_RD.map(p=><option key={p} value={p} style={{background:"#111827"}}>{p}</option>)}
+              </select>
+              <textarea value={a.descripcion} rows={2} onChange={e=>setAct(i,"descripcion",e.target.value)} placeholder="¿Qué se hizo hoy en esta partida?"
+                style={{width:"100%",padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"none",boxSizing:"border-box",marginBottom:12}}/>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                <label style={{fontSize:11,fontWeight:600,color:"#8899BB",textTransform:"uppercase",letterSpacing:"0.5px"}}>% Avance hoy</label>
+                <span style={{fontSize:14,fontWeight:800,color:"#3B82F6",fontFamily:"'Sora',sans-serif"}}>{a.avance}%</span>
+              </div>
+              <input type="range" min={0} max={100} value={a.avance} onChange={e=>setAct(i,"avance",+e.target.value)} style={{width:"100%",accentColor:"#3B82F6"}}/>
+            </div>
+          ))}
+          <button onClick={addAct} style={{background:"none",border:"1px dashed #3B82F666",borderRadius:10,padding:"8px 14px",color:"#3B82F6",fontSize:12,fontWeight:600,cursor:"pointer",width:"100%"}}>+ Agregar actividad</button>
+        </RDCard>
+      )}
+
+      {/* Paso 4 */}
+      {paso===4&&(
+        <div>
+          <RDCard title="Materiales Utilizados" icon="📦">
+            {form.materiales.map((m,i)=>(
+              <div key={i} style={{background:"#1a2235",borderRadius:16,padding:16,marginBottom:12,border:"1px solid #1e2d45"}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+                  <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#F59E0B22",color:"#F59E0B"}}>Material {i+1}</span>
+                  <button onClick={()=>remMat(i)} style={{background:"none",border:"none",color:"#EF4444",fontSize:18,cursor:"pointer"}}>×</button>
+                </div>
+                <input value={m.nombre} onChange={e=>setMat(i,"nombre",e.target.value)} placeholder="Nombre del material..."
+                  style={{width:"100%",padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:10}}/>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
+                  <input type="number" value={m.cantidad} onChange={e=>setMat(i,"cantidad",e.target.value)} placeholder="Cantidad"
+                    style={{padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none"}}/>
+                  <select value={m.unidad} onChange={e=>setMat(i,"unidad",e.target.value)} style={{padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none"}}>
+                    {UNIDADES_RD.map(u=><option key={u} value={u} style={{background:"#111827"}}>{u}</option>)}
+                  </select>
+                </div>
+                <input value={m.observacion} onChange={e=>setMat(i,"observacion",e.target.value)} placeholder="Observación (opcional)"
+                  style={{width:"100%",padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",boxSizing:"border-box"}}/>
+              </div>
+            ))}
+            <button onClick={addMat} style={{background:"none",border:"1px dashed #3B82F666",borderRadius:10,padding:"8px 14px",color:"#3B82F6",fontSize:12,fontWeight:600,cursor:"pointer",width:"100%"}}>+ Agregar material</button>
+          </RDCard>
+          <RDCard title="Equipos y Maquinaria" icon="🚧">
+            <RDTextarea value={form.equipos} onChange={v=>setForm({...form,equipos:v})} placeholder="Ej: Grúa torre activa (8:00-17:00), Hormigonera en uso..." rows={3}/>
+          </RDCard>
+        </div>
+      )}
+
+      {/* Paso 5 */}
+      {paso===5&&(
+        <div>
+          <RDCard title="Incidentes y Seguridad" icon="⚠️">
+            <div style={{background:"#EF444408",border:"1px solid #EF444422",borderRadius:12,padding:12,marginBottom:12}}>
+              <p style={{fontSize:12,color:"#EF4444",margin:0,fontWeight:600}}>Registra accidentes, cuasi-accidentes o situaciones de riesgo.</p>
+            </div>
+            <RDTextarea value={form.incidentes} onChange={v=>setForm({...form,incidentes:v})} placeholder="Si no hubo incidentes, escribe: Sin incidentes en el día" rows={3}/>
+          </RDCard>
+          <RDCard title="Observaciones Generales" icon="📝">
+            <RDTextarea value={form.observaciones} onChange={v=>setForm({...form,observaciones:v})} placeholder="Visitas, problemas de diseño, instrucciones del mandante, coordinaciones pendientes..." rows={5}/>
+          </RDCard>
+          <RDCard title="Registro Fotográfico" icon="📸">
+            <div style={{background:"#1a2235",border:"2px dashed #1e2d45",borderRadius:16,padding:28,textAlign:"center",cursor:"pointer"}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#3B82F6"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor="#1e2d45"}>
+              <div style={{fontSize:32,marginBottom:10}}>📷</div>
+              <p style={{fontSize:13,fontWeight:600,color:"#8899BB",margin:0}}>Subir fotos del avance</p>
+              <p style={{fontSize:11,color:"#445566",margin:"6px 0 14px"}}>JPG, PNG · Máximo 20 fotos</p>
+              <button style={{background:"linear-gradient(135deg,#3B82F6,#1D4ED8)",border:"none",borderRadius:10,padding:"9px 20px",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Seleccionar fotos</button>
+            </div>
+          </RDCard>
+        </div>
+      )}
+
+      {/* Navegación */}
+      <div style={{display:"flex",gap:12,marginTop:8}}>
+        {paso>1&&<button onClick={()=>setPaso(paso-1)} style={{flex:1,padding:"13px",background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:14,color:t.textSub,fontSize:14,fontWeight:600,cursor:"pointer"}}>← Anterior</button>}
+        <button onClick={()=>paso===5?setVista("resumen"):setPaso(paso+1)}
+          style={{flex:2,padding:"13px",background:"linear-gradient(135deg,#3B82F6,#1D4ED8)",border:"none",borderRadius:14,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px #3B82F644"}}>
+          {paso===5?"Revisar registro →":"Siguiente →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [darkMode,setDarkMode] = React.useState(false);
   const [loggedIn,setLoggedIn] = React.useState(false);
@@ -589,3 +866,4 @@ ReactDOM.render(<App/>, document.getElementById('root'));
 </script>
 </body>
 </html>
+
