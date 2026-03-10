@@ -431,58 +431,92 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
   );
 }
 
-function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
-  const [tab,setTab] = React.useState("home");
-  const [obraIdx,setObraIdx] = React.useState(0);
 
-  return (
-    <div style={{display:"flex",justifyContent:"center",alignItems:"center",minHeight:"100vh",background:darkMode?"#000":"#e8edf5",fontFamily:"'DM Sans',sans-serif"}}>
-      <div style={{width:390,height:844,background:t.bg,borderRadius:48,overflow:"hidden",position:"relative",boxShadow:"0 40px 120px rgba(0,0,0,0.4)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",padding:"14px 28px 0",fontSize:12,fontWeight:700,color:t.text}}>
-          <span>9:41</span>
-          <div style={{width:120,height:32,background:"#000",borderRadius:"0 0 20px 20px",margin:"0 auto"}}/>
-          <span style={{fontSize:10}}>●●● 5G</span>
-        </div>
-        <div className="mob-scroll" style={{height:"calc(100% - 80px)",marginTop:6}}>
-          {tab==="home"&&(
-            <div style={{padding:"0 20px 20px",animation:"fadeIn 0.3s ease"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:22}}>
-                <div>
-                  <p style={{fontSize:12,color:t.textMuted,margin:0}}>Buenos días 👋</p>
-                  <h1 style={{fontSize:22,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Roberto V.</h1>
-                </div>
-                <div style={{display:"flex",gap:8}}>
-                  <button onClick={toggleDark} className="mob-btn" style={{width:38,height:38,borderRadius:12,background:t.bgCard,border:`1px solid ${t.border}`,cursor:"pointer",fontSize:16}}>{darkMode?"☀️":"🌙"}</button>
-                  <div style={{position:"relative"}}>
-                    <div style={{width:38,height:38,borderRadius:"50%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff"}}>RV</div>
-                    <div style={{position:"absolute",top:0,right:0,width:10,height:10,background:t.red,borderRadius:"50%",border:`2px solid ${t.bg}`}}/>
-                  </div>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:10,marginBottom:22}}>
-                {[{v:"3",l:"Obras",c:t.blue},{v:"66%",l:"Avance",c:t.green},{v:"3",l:"Alertas",c:t.red}].map((k,i)=>(
-                  <div key={i} style={{flex:1,background:k.c+"18",border:`1px solid ${k.c}33`,borderRadius:16,padding:"14px 10px",textAlign:"center"}}>
-                    <p style={{fontSize:22,fontWeight:800,color:k.c,margin:0,fontFamily:"'Sora',sans-serif"}}>{k.v}</p>
                     <p style={{fontSize:10,color:t.textMuted,margin:"3px 0 0"}}>{k.l}</p>
                   </div>
                 ))}
               </div>
-              <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Mis Obras</p>
-              {obras.map((o,i)=>(
-                <div key={i} className="mob-btn" onClick={()=>{setObraIdx(i);setTab("obra");}}
-                  style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:18,padding:18,marginBottom:12}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-                    <div>
-                      <p style={{fontSize:14,fontWeight:700,color:t.text,margin:0}}>{o.nombre}</p>
-                      <p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>📍 {o.ubicacion}</p>
-                    </div>
-                    <StatusBadge estado={o.estado} t={t}/>
-                  </div>
-                  <ProgressBar value={o.avance} plan={o.plan} color={o.estado==="atrasado"?t.red:o.estado==="adelantado"?t.green:t.blue} t={t}/>
+
+              {/* Botón foto rápida destacado */}
+              <button className="mob-btn" onClick={()=>setFotoRapida(true)}
+                style={{width:"100%",background:`linear-gradient(135deg,${t.green},#059669)`,border:"none",borderRadius:18,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:14,cursor:"pointer",boxShadow:`0 4px 20px ${t.green}44`}}>
+                <div style={{width:44,height:44,borderRadius:14,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>📸</div>
+                <div style={{textAlign:"left"}}>
+                  <p style={{fontSize:15,fontWeight:700,color:"#fff",margin:0}}>Foto Rápida</p>
+                  <p style={{fontSize:11,color:"rgba(255,255,255,0.7)",margin:"2px 0 0"}}>El mandante la ve al instante</p>
                 </div>
-              ))}
+                <span style={{marginLeft:"auto",fontSize:20,color:"rgba(255,255,255,0.6)"}}>→</span>
+              </button>
+
+              {/* Fotos de hoy */}
+              {fotosHoy.length>0&&(
+                <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:18,overflow:"hidden",marginBottom:16}}>
+                  <div style={{padding:"12px 16px",borderBottom:`1px solid ${t.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px"}}>Avance de hoy</span>
+                    <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:t.green+"22",color:t.green}}>{fotosHoy.length} fotos</span>
+                  </div>
+                  {fotosHoy.map((f,i)=>(
+                    <div key={i} style={{display:"flex",gap:12,padding:"12px 16px",borderBottom:i<fotosHoy.length-1?`1px solid ${t.border}`:"none",alignItems:"center"}}>
+                      <div style={{width:40,height:40,borderRadius:10,background:t.bgCard2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{f.emoji}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <p style={{fontSize:12,fontWeight:600,color:t.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.desc}</p>
+                        <p style={{fontSize:10,color:t.textMuted,margin:"2px 0 0"}}>{f.hora}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Mi Obra</p>
+              <div className="mob-btn" onClick={()=>{setObraIdx(0);setTab("obra");}}
+                style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:18,padding:18,marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                  <div>
+                    <p style={{fontSize:14,fontWeight:700,color:t.text,margin:0}}>{obras[0].nombre}</p>
+                    <p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>📍 {obras[0].ubicacion}</p>
+                  </div>
+                  <StatusBadge estado={obras[0].estado} t={t}/>
+                </div>
+                <ProgressBar value={obras[0].avance} plan={obras[0].plan} color={t.red} t={t}/>
+              </div>
             </div>
           )}
+
+          {/* Modal Foto Rápida */}
+          {fotoRapida&&(
+            <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.85)",zIndex:50,display:"flex",flexDirection:"column",animation:"fadeIn 0.2s ease"}}>
+              <div style={{padding:"20px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <h2 style={{fontSize:17,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Sora',sans-serif"}}>📸 Foto Rápida</h2>
+                <button onClick={()=>setFotoRapida(false)} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:10,width:34,height:34,color:"#fff",fontSize:18,cursor:"pointer"}}>×</button>
+              </div>
+              <div style={{flex:1,margin:20,background:"#0D1420",borderRadius:24,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:"2px dashed #1e2d45",cursor:"pointer"}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor="#10B981"}
+                onMouseLeave={e=>e.currentTarget.style.borderColor="#1e2d45"}>
+                <span style={{fontSize:48,marginBottom:12}}>📷</span>
+                <p style={{fontSize:14,fontWeight:600,color:"#8899BB",margin:0}}>Toca para tomar foto</p>
+                <p style={{fontSize:11,color:"#445566",margin:"6px 0 0"}}>o selecciona de tu galería</p>
+              </div>
+              <div style={{padding:"0 20px 20px"}}>
+                <input placeholder="Descripción breve (opcional)..."
+                  value={descFoto} onChange={e=>setDescFoto(e.target.value)}
+                  style={{width:"100%",padding:"14px 16px",background:"#111827",border:"1.5px solid #1e2d45",borderRadius:14,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:12}}
+                  onFocus={e=>e.target.style.border="1.5px solid #10B981"}
+                  onBlur={e=>e.target.style.border="1.5px solid #1e2d45"}/>
+                <div style={{background:"#10B98118",border:"1px solid #10B98133",borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:14}}>👁️</span>
+                  <p style={{fontSize:11,color:"#10B981",margin:0,fontWeight:600}}>El mandante verá esta foto al instante en su portal</p>
+                </div>
+                <button onClick={()=>{
+                  const emojis=["🏗️","⚙️","🔨","🧱","⚡","🔧"];
+                  setFotosHoy([...fotosHoy,{hora:new Date().toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"}),desc:descFoto||"Avance registrado",emoji:emojis[Math.floor(Math.random()*emojis.length)]}]);
+                  setDescFoto(""); setFotoRapida(false);
+                }} style={{width:"100%",background:"linear-gradient(135deg,#10B981,#059669)",border:"none",borderRadius:14,padding:15,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px #10B98144"}}>
+                  ✓ Enviar foto al mandante
+                </button>
+              </div>
+            </div>
+          )}
+
           {tab==="obra"&&(
             <div style={{padding:"0 20px 20px",animation:"fadeIn 0.3s ease"}}>
               <div style={{display:"flex",alignItems:"center",gap:12,paddingTop:8,marginBottom:20}}>
@@ -510,9 +544,14 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
                   <p style={{fontSize:12,color:t.textSub,margin:0}}>Ejecutado: <strong style={{color:t.blue}}>{fmt(obras[obraIdx].gastado)}</strong></p>
                 </div>
               </div>
+              {/* Botones acción */}
+              <button className="mob-btn" onClick={()=>setFotoRapida(true)}
+                style={{width:"100%",background:`linear-gradient(135deg,${t.green},#059669)`,border:"none",borderRadius:16,padding:14,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                📸 Foto rápida al mandante
+              </button>
               <button className="mob-btn" onClick={()=>setTab("registro")}
-                style={{width:"100%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:16,padding:16,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",marginBottom:14}}>
-                ✏️ Registrar avance hoy
+                style={{width:"100%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:16,padding:14,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                ✏️ Registro completo del día
               </button>
             </div>
           )}
@@ -520,10 +559,17 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
             <div style={{padding:"0 20px 20px",animation:"fadeIn 0.3s ease"}}>
               <div style={{display:"flex",alignItems:"center",gap:12,paddingTop:8,marginBottom:22}}>
                 <button className="mob-btn" onClick={()=>setTab("obra")} style={{width:36,height:36,borderRadius:12,background:t.bgCard,border:`1px solid ${t.border}`,cursor:"pointer",color:t.text,fontSize:18}}>←</button>
-                <h2 style={{fontSize:18,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Nuevo Registro</h2>
+                <h2 style={{fontSize:18,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Registro del Día</h2>
               </div>
+              {/* Fotos del día adjuntas */}
+              {fotosHoy.length>0&&(
+                <div style={{background:t.green+"18",border:`1px solid ${t.green}33`,borderRadius:14,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:16}}>📸</span>
+                  <p style={{fontSize:12,color:t.green,fontWeight:600,margin:0}}>{fotosHoy.length} fotos del día se adjuntarán al informe automáticamente</p>
+                </div>
+              )}
               <div style={{background:t.blue+"18",border:`1px solid ${t.blue}33`,borderRadius:14,padding:"14px 18px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:14,color:t.text,fontWeight:600}}>📅 Lunes 9 Mar, 2026</span>
+                <span style={{fontSize:14,color:t.text,fontWeight:600}}>📅 {new Date().toLocaleDateString("es-CL",{weekday:"short",day:"numeric",month:"short"})}</span>
                 <span style={{fontSize:11,color:t.blue,fontWeight:700}}>HOY</span>
               </div>
               <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:16,marginBottom:12}}>
@@ -535,7 +581,7 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
                 </div>
               </div>
               <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:16,marginBottom:12}}>
-                <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Personal</p>
+                <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Personal en obra</p>
                 <div style={{display:"flex",gap:8}}>
                   {["8","10","12","14","16"].map((n,i)=>(
                     <button key={i} className="mob-btn" style={{flex:1,padding:"10px 0",background:n==="14"?`linear-gradient(135deg,${t.blue},${t.blueDark})`:t.bgCard2,border:n==="14"?"none":`1px solid ${t.border}`,borderRadius:12,color:n==="14"?"#fff":t.textSub,fontSize:14,fontWeight:700,cursor:"pointer"}}>{n}</button>
@@ -544,17 +590,32 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
               </div>
               <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:16,marginBottom:14}}>
                 <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:10}}>Actividades del día</p>
-                <textarea placeholder="Describe las actividades..." style={{width:"100%",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,padding:14,color:t.text,fontSize:13,resize:"none",height:90,fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box"}}/>
+                <textarea placeholder="Describe las actividades realizadas hoy..." style={{width:"100%",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,padding:14,color:t.text,fontSize:13,resize:"none",height:90,fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box"}}
+                  onFocus={e=>e.target.style.border=`1.5px solid ${t.blue}`}
+                  onBlur={e=>e.target.style.border=`1.5px solid ${t.border}`}/>
               </div>
-              <button className="mob-btn" style={{width:"100%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:16,padding:16,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>✓ Guardar Registro</button>
+              <button className="mob-btn" style={{width:"100%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:16,padding:16,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:`0 4px 20px ${t.blue}44`}}>
+                ✓ Cerrar jornada y generar informe
+              </button>
             </div>
           )}
         </div>
+
+        {/* Bottom nav */}
         <div style={{position:"absolute",bottom:0,left:0,right:0,background:darkMode?"rgba(10,14,26,0.95)":"rgba(255,255,255,0.95)",backdropFilter:"blur(20px)",borderTop:`1px solid ${t.border}`,padding:"8px 10px 24px",display:"flex",justifyContent:"space-around"}}>
-          {[{id:"home",icon:"▦",label:"Inicio"},{id:"obra",icon:"🏗️",label:"Obra"},{id:"registro",icon:"✏️",label:"Registrar"},{id:"home",icon:"📦",label:"Bodega"},{id:"home",icon:"🤖",label:"IA"}].map((item,i)=>(
-            <div key={i} onClick={()=>setTab(item.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 14px",borderRadius:14,cursor:"pointer",background:tab===item.id?t.blue+"18":"transparent",transition:"all 0.2s"}}>
+          {[
+            {id:"home",   icon:"▦",  label:"Inicio"},
+            {id:"obra",   icon:"🏗️", label:"Mi Obra"},
+            {id:"foto",   icon:"📸", label:"Foto",  accion:()=>setFotoRapida(true)},
+            {id:"registro",icon:"✏️",label:"Registrar"},
+          ].map((item,i)=>(
+            <div key={i} onClick={item.accion||(()=>setTab(item.id))}
+              style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 14px",borderRadius:14,cursor:"pointer",
+                background: item.id==="foto" ? t.green+"18" : tab===item.id?t.blue+"18":"transparent",
+                transition:"all 0.2s"}}>
               <span style={{fontSize:20}}>{item.icon}</span>
-              <span style={{fontSize:10,fontWeight:tab===item.id?700:400,color:tab===item.id?t.blue:t.textMuted}}>{item.label}</span>
+              <span style={{fontSize:10,fontWeight:(item.id==="foto"||tab===item.id)?700:400,
+                color:item.id==="foto"?t.green:tab===item.id?t.blue:t.textMuted}}>{item.label}</span>
             </div>
           ))}
         </div>
@@ -866,4 +927,3 @@ ReactDOM.render(<App/>, document.getElementById('root'));
 </script>
 </body>
 </html>
-
