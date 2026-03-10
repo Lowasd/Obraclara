@@ -432,6 +432,241 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
 }
 
 
+function FotoRapidaModal({t,onClose,onEnviar}) {
+  const emojis = ["🏗️","⚙️","🔨","🧱","⚡","🔧","🪵","🪣","🔩","🪜"];
+  const [paso,setPaso] = React.useState("elegir"); // "elegir" | "camara" | "galeria" | "confirmar"
+  const [fotos,setFotos] = React.useState([]);
+  const [descComun,setDescComun] = React.useState("");
+  const hora = new Date().toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"});
+
+  // Simula selección múltiple de galería
+  const GALERIA_DEMO = [
+    {id:1,emoji:"🏗️",nombre:"IMG_4521.jpg"},
+    {id:2,emoji:"⚙️",nombre:"IMG_4522.jpg"},
+    {id:3,emoji:"🔨",nombre:"IMG_4523.jpg"},
+    {id:4,emoji:"🧱",nombre:"IMG_4524.jpg"},
+    {id:5,emoji:"⚡",nombre:"IMG_4525.jpg"},
+    {id:6,emoji:"🔧",nombre:"IMG_4526.jpg"},
+    {id:7,emoji:"🪵",nombre:"IMG_4527.jpg"},
+    {id:8,emoji:"🪣",nombre:"IMG_4528.jpg"},
+  ];
+  const [seleccionadas,setSeleccionadas] = React.useState([]);
+
+  const toggleSeleccion = (foto) => {
+    const yaEsta = seleccionadas.find(f=>f.id===foto.id);
+    if(yaEsta) { setSeleccionadas(seleccionadas.filter(f=>f.id!==foto.id)); return; }
+    if(seleccionadas.length>=10) return;
+    setSeleccionadas([...seleccionadas,foto]);
+  };
+
+  const confirmarGaleria = () => {
+    setFotos(seleccionadas.map(f=>({...f,desc:""})));
+    setPaso("confirmar");
+  };
+
+  const tomarFoto = () => {
+    const nueva = {id:Date.now(),emoji:emojis[Math.floor(Math.random()*emojis.length)],nombre:"FOTO_"+hora+".jpg",desc:""};
+    setFotos([nueva]);
+    setPaso("confirmar");
+  };
+
+  const quitarFoto = (id) => setFotos(fotos.filter(f=>f.id!==id));
+  const setDesc = (id,val) => setFotos(fotos.map(f=>f.id===id?{...f,desc:val}:f));
+
+  const handleEnviar = () => {
+    const nuevas = fotos.map(f=>({hora,emoji:f.emoji,desc:f.desc||descComun||"Avance registrado"}));
+    onEnviar(nuevas);
+  };
+
+  return (
+    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.95)",zIndex:50,display:"flex",flexDirection:"column",animation:"fadeIn 0.2s ease"}}>
+
+      {/* Header */}
+      <div style={{padding:"18px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #1e2d45",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {paso!=="elegir"&&(
+            <button onClick={()=>setPaso(paso==="confirmar"?(fotos.length&&seleccionadas.length?"galeria":"elegir"):"elegir")}
+              style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,width:30,height:30,color:"#fff",fontSize:16,cursor:"pointer"}}>←</button>
+          )}
+          <div>
+            <h2 style={{fontSize:17,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Sora',sans-serif"}}>📸 Foto Rápida</h2>
+            <p style={{fontSize:11,color:"#445566",margin:"2px 0 0"}}>
+              {paso==="elegir"&&"¿Cómo quieres agregar fotos?"}
+              {paso==="camara"&&"Tomando foto..."}
+              {paso==="galeria"&&`${seleccionadas.length}/10 seleccionadas`}
+              {paso==="confirmar"&&`${fotos.length} foto${fotos.length>1?"s":""} listas para enviar`}
+            </p>
+          </div>
+        </div>
+        <button onClick={onClose} style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:10,width:34,height:34,color:"#fff",fontSize:18,cursor:"pointer"}}>×</button>
+      </div>
+
+      {/* PASO: Elegir origen */}
+      {paso==="elegir"&&(
+        <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"20px"}}>
+          <button onClick={tomarFoto}
+            style={{background:"#0D1420",border:"2px solid #1e2d45",borderRadius:22,padding:"28px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:18,transition:"all 0.2s",width:"100%"}}
+            onMouseEnter={e=>e.currentTarget.style.borderColor="#10B981"}
+            onMouseLeave={e=>e.currentTarget.style.borderColor="#1e2d45"}>
+            <div style={{width:60,height:60,borderRadius:18,background:"linear-gradient(135deg,#10B981,#059669)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>📷</div>
+            <div style={{textAlign:"left"}}>
+              <p style={{fontSize:16,fontWeight:700,color:"#fff",margin:0}}>Tomar foto</p>
+              <p style={{fontSize:12,color:"#445566",margin:"4px 0 0"}}>Abre la cámara ahora</p>
+            </div>
+          </button>
+          <button onClick={()=>setPaso("galeria")}
+            style={{background:"#0D1420",border:"2px solid #1e2d45",borderRadius:22,padding:"28px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:18,transition:"all 0.2s",width:"100%"}}
+            onMouseEnter={e=>e.currentTarget.style.borderColor="#3B82F6"}
+            onMouseLeave={e=>e.currentTarget.style.borderColor="#1e2d45"}>
+            <div style={{width:60,height:60,borderRadius:18,background:"linear-gradient(135deg,#3B82F6,#1D4ED8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🖼️</div>
+            <div style={{textAlign:"left"}}>
+              <p style={{fontSize:16,fontWeight:700,color:"#fff",margin:0}}>Elegir de galería</p>
+              <p style={{fontSize:12,color:"#445566",margin:"4px 0 0"}}>Selecciona hasta 10 fotos a la vez</p>
+            </div>
+          </button>
+          <div style={{background:"#10B98114",border:"1px solid #10B98133",borderRadius:12,padding:"10px 14px",marginTop:20,display:"flex",alignItems:"center",gap:8}}>
+            <span>👁️</span>
+            <p style={{fontSize:11,color:"#10B981",margin:0,fontWeight:600}}>El mandante las verá al instante en su portal</p>
+          </div>
+        </div>
+      )}
+
+      {/* PASO: Galería con selección múltiple */}
+      {paso==="galeria"&&(
+        <div style={{flex:1,display:"flex",flexDirection:"column"}}>
+          <div style={{flex:1,overflowY:"auto",padding:"14px 20px"}}>
+            <p style={{fontSize:11,color:"#445566",marginBottom:12}}>Toca para seleccionar · máximo 10 fotos</p>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              {GALERIA_DEMO.map(foto=>{
+                const sel = seleccionadas.find(f=>f.id===foto.id);
+                const idx = seleccionadas.findIndex(f=>f.id===foto.id);
+                const bloqueada = !sel && seleccionadas.length>=10;
+                return (
+                  <div key={foto.id} onClick={()=>!bloqueada&&toggleSeleccion(foto)}
+                    style={{aspectRatio:"1",background:"#0D1420",borderRadius:14,
+                      border:`2px solid ${sel?"#3B82F6":"#1e2d45"}`,
+                      display:"flex",flexDirection:"column",alignItems:"center",
+                      justifyContent:"center",cursor:bloqueada?"not-allowed":"pointer",
+                      position:"relative",opacity:bloqueada?0.4:1,transition:"all 0.15s"}}>
+                    <span style={{fontSize:32}}>{foto.emoji}</span>
+                    <span style={{fontSize:9,color:"#445566",marginTop:4}}>{foto.nombre}</span>
+                    {sel&&(
+                      <div style={{position:"absolute",top:6,right:6,width:22,height:22,
+                        borderRadius:"50%",background:"#3B82F6",display:"flex",
+                        alignItems:"center",justifyContent:"center",fontSize:11,
+                        fontWeight:800,color:"#fff"}}>
+                        {idx+1}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{padding:"14px 20px 28px",flexShrink:0}}>
+            <button onClick={confirmarGaleria} disabled={seleccionadas.length===0}
+              style={{width:"100%",background:seleccionadas.length?"linear-gradient(135deg,#3B82F6,#1D4ED8)":"#1e2d45",
+                border:"none",borderRadius:14,padding:15,color:seleccionadas.length?"#fff":"#445566",
+                fontSize:15,fontWeight:700,cursor:seleccionadas.length?"pointer":"default",
+                boxShadow:seleccionadas.length?"0 4px 20px #3B82F644":"none"}}>
+              {seleccionadas.length?`Confirmar ${seleccionadas.length} foto${seleccionadas.length>1?"s":""}  →`:"Selecciona al menos 1 foto"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PASO: Confirmar + descripción */}
+      {paso==="confirmar"&&(
+        <div style={{flex:1,display:"flex",flexDirection:"column"}}>
+          <div style={{flex:1,overflowY:"auto",padding:"14px 20px"}}>
+            {/* Descripción común */}
+            <input placeholder="Descripción para todas (opcional)..."
+              value={descComun} onChange={e=>setDescComun(e.target.value)}
+              style={{width:"100%",padding:"12px 14px",background:"#111827",
+                border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",
+                fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",
+                boxSizing:"border-box",marginBottom:14}}
+              onFocus={e=>e.target.style.border="1.5px solid #10B981"}
+              onBlur={e=>e.target.style.border="1.5px solid #1e2d45"}/>
+
+            {/* Lista fotos con desc individual */}
+            {fotos.map((f,i)=>(
+              <div key={f.id} style={{background:"#0D1420",borderRadius:14,
+                border:"1px solid #1e2d45",marginBottom:10,
+                display:"flex",alignItems:"center",gap:12,padding:"10px 14px"}}>
+                <div style={{width:46,height:46,borderRadius:12,background:"#111827",
+                  display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>
+                  {f.emoji}
+                </div>
+                <input placeholder={`Foto ${i+1} — descripción (opcional)`}
+                  value={f.desc} onChange={e=>setDesc(f.id,e.target.value)}
+                  style={{flex:1,background:"transparent",border:"none",color:"#8899BB",
+                    fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:"none"}}/>
+                <button onClick={()=>quitarFoto(f.id)}
+                  style={{background:"none",border:"none",color:"#EF4444",fontSize:18,cursor:"pointer",flexShrink:0}}>×</button>
+              </div>
+            ))}
+
+            <div style={{background:"#10B98114",border:"1px solid #10B98133",
+              borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+              <span>👁️</span>
+              <p style={{fontSize:11,color:"#10B981",margin:0,fontWeight:600}}>
+                El mandante verá {fotos.length} foto{fotos.length>1?"s":""} al instante
+              </p>
+            </div>
+          </div>
+
+          <div style={{padding:"14px 20px 28px",flexShrink:0}}>
+            <button onClick={handleEnviar} disabled={fotos.length===0}
+              style={{width:"100%",background:"linear-gradient(135deg,#10B981,#059669)",
+                border:"none",borderRadius:14,padding:15,color:"#fff",fontSize:15,
+                fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px #10B98144"}}>
+              ✓ Enviar {fotos.length} foto{fotos.length>1?"s":""} al mandante
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
+  const [tab,setTab] = React.useState("home");
+  const [obraIdx,setObraIdx] = React.useState(0);
+  const [fotoRapida,setFotoRapida] = React.useState(false);
+  const [descFoto,setDescFoto] = React.useState("");
+  const [fotosHoy,setFotosHoy] = React.useState([
+    {hora:"08:30",desc:"Inicio moldaje losa nivel 3",emoji:"🏗️"},
+    {hora:"11:00",desc:"Armado de fierro completado",emoji:"⚙️"},
+    {hora:"14:30",desc:"Hormigonado en proceso",emoji:"🔨"},
+  ]);
+
+  return (
+    <div style={{display:"flex",justifyContent:"center",alignItems:"center",minHeight:"100vh",background:darkMode?"#000":"#e8edf5",fontFamily:"'DM Sans',sans-serif"}}>
+      <div style={{width:390,height:844,background:t.bg,borderRadius:48,overflow:"hidden",position:"relative",boxShadow:"0 40px 120px rgba(0,0,0,0.4)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",padding:"14px 28px 0",fontSize:12,fontWeight:700,color:t.text}}>
+          <span>9:41</span>
+          <div style={{width:120,height:32,background:"#000",borderRadius:"0 0 20px 20px",margin:"0 auto"}}/>
+          <span style={{fontSize:10}}>●●● 5G</span>
+        </div>
+        <div className="mob-scroll" style={{height:"calc(100% - 80px)",marginTop:6}}>
+          {tab==="home"&&(
+            <div style={{padding:"0 20px 20px",animation:"fadeIn 0.3s ease"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:22}}>
+                <div>
+                  <p style={{fontSize:12,color:t.textMuted,margin:0}}>Buenos días 👋</p>
+                  <h1 style={{fontSize:22,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Carlos M.</h1>
+                  <p style={{fontSize:11,color:t.blue,margin:"2px 0 0",fontWeight:600}}>Jefe de Terreno</p>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={toggleDark} className="mob-btn" style={{width:38,height:38,borderRadius:12,background:t.bgCard,border:`1px solid ${t.border}`,cursor:"pointer",fontSize:16}}>{darkMode?"☀️":"🌙"}</button>
+                  <div style={{width:38,height:38,borderRadius:"50%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff"}}>CM</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:10,marginBottom:16}}>
+                {[{v:"67%",l:"Avance",c:t.blue},{v:"14",l:"Personal",c:t.green},{v:"2",l:"Alertas",c:t.red}].map((k,i)=>(
+                  <div key={i} style={{flex:1,background:k.c+"18",border:`1px solid ${k.c}33`,borderRadius:16,padding:"14px 10px",textAlign:"center"}}>
+                    <p style={{fontSize:22,fontWeight:800,color:k.c,margin:0,fontFamily:"'Sora',sans-serif"}}>{k.v}</p>
                     <p style={{fontSize:10,color:t.textMuted,margin:"3px 0 0"}}>{k.l}</p>
                   </div>
                 ))}
@@ -482,39 +717,16 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
             </div>
           )}
 
-          {/* Modal Foto Rápida */}
+          {/* Modal Foto Rápida — múltiples fotos */}
           {fotoRapida&&(
-            <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.85)",zIndex:50,display:"flex",flexDirection:"column",animation:"fadeIn 0.2s ease"}}>
-              <div style={{padding:"20px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <h2 style={{fontSize:17,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Sora',sans-serif"}}>📸 Foto Rápida</h2>
-                <button onClick={()=>setFotoRapida(false)} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:10,width:34,height:34,color:"#fff",fontSize:18,cursor:"pointer"}}>×</button>
-              </div>
-              <div style={{flex:1,margin:20,background:"#0D1420",borderRadius:24,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:"2px dashed #1e2d45",cursor:"pointer"}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor="#10B981"}
-                onMouseLeave={e=>e.currentTarget.style.borderColor="#1e2d45"}>
-                <span style={{fontSize:48,marginBottom:12}}>📷</span>
-                <p style={{fontSize:14,fontWeight:600,color:"#8899BB",margin:0}}>Toca para tomar foto</p>
-                <p style={{fontSize:11,color:"#445566",margin:"6px 0 0"}}>o selecciona de tu galería</p>
-              </div>
-              <div style={{padding:"0 20px 20px"}}>
-                <input placeholder="Descripción breve (opcional)..."
-                  value={descFoto} onChange={e=>setDescFoto(e.target.value)}
-                  style={{width:"100%",padding:"14px 16px",background:"#111827",border:"1.5px solid #1e2d45",borderRadius:14,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:12}}
-                  onFocus={e=>e.target.style.border="1.5px solid #10B981"}
-                  onBlur={e=>e.target.style.border="1.5px solid #1e2d45"}/>
-                <div style={{background:"#10B98118",border:"1px solid #10B98133",borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:14}}>👁️</span>
-                  <p style={{fontSize:11,color:"#10B981",margin:0,fontWeight:600}}>El mandante verá esta foto al instante en su portal</p>
-                </div>
-                <button onClick={()=>{
-                  const emojis=["🏗️","⚙️","🔨","🧱","⚡","🔧"];
-                  setFotosHoy([...fotosHoy,{hora:new Date().toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"}),desc:descFoto||"Avance registrado",emoji:emojis[Math.floor(Math.random()*emojis.length)]}]);
-                  setDescFoto(""); setFotoRapida(false);
-                }} style={{width:"100%",background:"linear-gradient(135deg,#10B981,#059669)",border:"none",borderRadius:14,padding:15,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px #10B98144"}}>
-                  ✓ Enviar foto al mandante
-                </button>
-              </div>
-            </div>
+            <FotoRapidaModal
+              t={t}
+              onClose={()=>setFotoRapida(false)}
+              onEnviar={(nuevas)=>{
+                setFotosHoy([...fotosHoy,...nuevas]);
+                setFotoRapida(false);
+              }}
+            />
           )}
 
           {tab==="obra"&&(
