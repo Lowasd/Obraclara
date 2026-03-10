@@ -194,13 +194,11 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
 
 function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
   const [activeTab,setActiveTab] = React.useState("dashboard");
-  const [activeObra,setActiveObra] = React.useState(0);
+  const [activeObra,setActiveObra] = React.useState(-1);
 
   const navItems = [
-    {id:"dashboard",icon:"▦", label:"Dashboard"},
-    {id:"obras",    icon:"🏗️",label:"Mis Obras"},
+    {id:"dashboard",icon:"▦", label:"Mis Obras"},
     {id:"registro", icon:"✏️",label:"Registro"},
-    {id:"materiales",icon:"📦",label:"Materiales"},
     {id:"reportes", icon:"🤖",label:"Reportes IA"},
     {id:"mandante", icon:"👁️",label:"Mandante"},
   ];
@@ -248,7 +246,7 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
         <div style={{padding:"16px 28px",borderBottom:`1px solid ${t.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:t.navBg,position:"sticky",top:0,zIndex:10}}>
           <div>
             <h1 style={{fontFamily:"'Sora',sans-serif",fontSize:18,fontWeight:800,color:t.text,margin:0}}>
-              {{dashboard:"Dashboard General",obras:"Mis Obras",registro:"Registro Diario",materiales:"Materiales",reportes:"Reportes IA",mandante:"Portal Mandante"}[activeTab]}
+              {{dashboard:"Mis Obras",registro:"Registro Diario",reportes:"Reportes IA",mandante:"Portal Mandante"}[activeTab]}
             </h1>
             <p style={{fontSize:11,color:t.textMuted,margin:0,marginTop:2}}>Lunes 9 de marzo, 2026</p>
           </div>
@@ -293,27 +291,7 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
                 ))}
               </div>
 
-              {/* Alertas urgentes */}
-              <div style={{background:t.yellow+"0D",border:`1.5px solid ${t.yellow}33`,borderRadius:18,padding:20,marginBottom:20}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-                  <div style={{width:32,height:32,borderRadius:10,background:t.yellow+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>📦</div>
-                  <p style={{fontSize:13,fontWeight:700,color:t.yellow,margin:0}}>Materiales con stock crítico</p>
-                </div>
-                {[
-                  {mat:"Fierro 12mm",  obra:"Los Aromos",  dias:2, actual:"80 kg", minimo:"500 kg"},
-                  {mat:"Cemento Polpaico", obra:"El Roble", dias:4, actual:"12 sacos", minimo:"40 sacos"},
-                ].map((item,i)=>(
-                  <div key={i} style={{background:t.bgCard,borderRadius:12,padding:"12px 16px",marginBottom:i===0?8:0,display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{flex:1}}>
-                      <p style={{fontSize:13,fontWeight:700,color:t.text,margin:0}}>{item.mat} <span style={{fontSize:11,color:t.textMuted,fontWeight:400}}>· {item.obra}</span></p>
-                      <p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>Stock actual: <strong style={{color:t.red}}>{item.actual}</strong> · Mínimo: {item.minimo}</p>
-                    </div>
-                    <span style={{fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:20,background:t.red+"22",color:t.red,whiteSpace:"nowrap"}}>{item.dias}d restantes</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Estado obras — más compacto */}
+              {/* Alertas urgentes — sin registro */}
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14,marginBottom:20}}>
                 {obras.map((o,i)=>{
                   const diff = o.avance - o.plan;
@@ -375,7 +353,7 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
                     {[
                       {label:"Registros cerrados",value:"4 / 5",color:t.yellow},
                       {label:"Fotos enviadas",    value:"23",   color:t.green},
-                      {label:"Alertas resueltas", value:"1 / 3",color:t.red},
+                      {label:"Alertas activas",   value:"1",    color:t.red},
                     ].map((row,i)=>(
                       <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:i<2?`1px solid ${t.border}`:"none"}}>
                         <span style={{fontSize:12,color:t.textMuted}}>{row.label}</span>
@@ -385,95 +363,149 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {activeTab==="obras"&&(
-            <div>
-              <div style={{display:"flex",gap:10,marginBottom:24}}>
-                {obras.map((o,i)=>(
-                  <button key={i} onClick={()=>setActiveObra(i)}
-                    style={{padding:"8px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:activeObra===i?`linear-gradient(135deg,${t.blue},${t.blueDark})`:t.bgCard,border:activeObra===i?"none":`1px solid ${t.border}`,color:activeObra===i?"#fff":t.textSub,cursor:"pointer",transition:"all 0.2s"}}>
-                    {o.nombre}
-                  </button>
-                ))}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
-                <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:24,boxShadow:t.shadow}}>
-                  <h3 style={{fontSize:14,fontWeight:700,color:t.text,marginBottom:20}}>Avance por Partidas</h3>
-                  {[{n:"Fundaciones",v:100},{n:"Estructura",v:85},{n:"Albañilería",v:60},{n:"Instalaciones",v:40},{n:"Terminaciones",v:10}].map((p,i)=>(
-                    <div key={i} style={{marginBottom:16}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                        <span style={{fontSize:13,color:t.textSub}}>{p.n}</span>
-                        <span style={{fontSize:13,fontWeight:700,color:p.v===100?t.green:p.v>50?t.yellow:t.red}}>{p.v}%</span>
-                      </div>
-                      <div style={{height:7,background:t.border,borderRadius:4,overflow:"hidden"}}>
-                        <div style={{height:"100%",borderRadius:4,width:p.v+"%",background:p.v===100?t.green:p.v>50?t.yellow:t.red,transition:"width 1s"}}/>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:24,boxShadow:t.shadow}}>
-                  <h3 style={{fontSize:14,fontWeight:700,color:t.text,marginBottom:20}}>Presupuesto</h3>
-                  <div style={{display:"flex",alignItems:"center",gap:24}}>
-                    <div style={{position:"relative",width:120,height:120,flexShrink:0}}>
-                      <svg viewBox="0 0 120 120" style={{transform:"rotate(-90deg)",width:120,height:120}}>
-                        <circle cx="60" cy="60" r="48" fill="none" stroke={t.border} strokeWidth="10"/>
-                        <circle cx="60" cy="60" r="48" fill="none" stroke={t.blue} strokeWidth="10" strokeLinecap="round"
-                          strokeDasharray={`${2*Math.PI*48*obras[activeObra].gastado/obras[activeObra].presupuesto} ${2*Math.PI*48}`}/>
-                      </svg>
-                      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-                        <span style={{fontSize:20,fontWeight:800,color:t.text,fontFamily:"'Sora',sans-serif"}}>{Math.round(obras[activeObra].gastado/obras[activeObra].presupuesto*100)}%</span>
-                        <span style={{fontSize:9,color:t.textMuted}}>ejecutado</span>
-                      </div>
-                    </div>
-                    <div style={{flex:1}}>
-                      {[
-                        {label:"Presupuesto",value:fmt(obras[activeObra].presupuesto),color:t.textMuted},
-                        {label:"Gastado",    value:fmt(obras[activeObra].gastado),     color:t.blue},
-                        {label:"Disponible", value:fmt(obras[activeObra].presupuesto-obras[activeObra].gastado),color:t.green},
-                      ].map((item,i)=>(
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:i<2?`1px solid ${t.border}`:"none"}}>
-                          <span style={{fontSize:12,color:t.textSub}}>{item.label}</span>
-                          <span style={{fontSize:13,fontWeight:700,color:item.color}}>{item.value}</span>
+              {/* Obras con detalle expandible */}
+              <div style={{marginTop:8}}>
+                <h3 style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Detalle por obra</h3>
+                {obras.map((o,i)=>{
+                  const diff = o.avance - o.plan;
+                  const color = diff >= 0 ? t.green : diff > -10 ? t.yellow : t.red;
+                  const isActive = activeObra === i;
+                  return (
+                    <div key={i} style={{background:t.bgCard,border:`1px solid ${isActive?t.blue+"66":t.border}`,borderRadius:16,marginBottom:12,overflow:"hidden",transition:"all 0.2s",boxShadow:t.shadow}}>
+                      {/* Header obra — siempre visible */}
+                      <div onClick={()=>setActiveObra(isActive?-1:i)}
+                        style={{padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}
+                        onMouseEnter={e=>e.currentTarget.style.background=t.bgCard2}
+                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <div style={{flex:1}}>
+                          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                            <p style={{fontSize:14,fontWeight:700,color:t.text,margin:0}}>{o.nombre}</p>
+                            <span style={{fontSize:10,color:t.textMuted}}>📍 {o.ubicacion}</span>
+                            <span style={{marginLeft:"auto",fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:color+"22",color}}>{diff>=0?`+${diff}%`:`${diff}%`} vs plan</span>
+                          </div>
+                          <ProgressBar value={o.avance} plan={o.plan} color={color} t={t}/>
                         </div>
-                      ))}
+                        <span style={{fontSize:14,color:t.textMuted,transform:isActive?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",flexShrink:0}}>▾</span>
+                      </div>
+                      {/* Detalle expandido */}
+                      {isActive&&(
+                        <div style={{borderTop:`1px solid ${t.border}`,padding:"20px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,animation:"fadeIn 0.2s ease"}}>
+                          <div>
+                            <p style={{fontSize:12,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:14}}>Avance por partidas</p>
+                            {[{n:"Fundaciones",v:100},{n:"Estructura",v:85},{n:"Albañilería",v:60},{n:"Instalaciones",v:40},{n:"Terminaciones",v:10}].map((p,j)=>(
+                              <div key={j} style={{marginBottom:12}}>
+                                <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                                  <span style={{fontSize:12,color:t.textSub}}>{p.n}</span>
+                                  <span style={{fontSize:12,fontWeight:700,color:p.v===100?t.green:p.v>50?t.yellow:t.red}}>{p.v}%</span>
+                                </div>
+                                <div style={{height:6,background:t.border,borderRadius:3,overflow:"hidden"}}>
+                                  <div style={{height:"100%",borderRadius:3,width:p.v+"%",background:p.v===100?t.green:p.v>50?t.yellow:t.red,transition:"width 1s"}}/>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                            <p style={{fontSize:12,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.5px",margin:0}}>Presupuesto</p>
+                            <div style={{display:"flex",alignItems:"center",gap:20}}>
+                              <div style={{position:"relative",width:90,height:90,flexShrink:0}}>
+                                <svg viewBox="0 0 90 90" style={{transform:"rotate(-90deg)",width:90,height:90}}>
+                                  <circle cx="45" cy="45" r="36" fill="none" stroke={t.border} strokeWidth="8"/>
+                                  <circle cx="45" cy="45" r="36" fill="none" stroke={t.blue} strokeWidth="8" strokeLinecap="round"
+                                    strokeDasharray={`${2*Math.PI*36*o.gastado/o.presupuesto} ${2*Math.PI*36}`}/>
+                                </svg>
+                                <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                                  <span style={{fontSize:15,fontWeight:800,color:t.text,fontFamily:"'Sora',sans-serif"}}>{Math.round(o.gastado/o.presupuesto*100)}%</span>
+                                </div>
+                              </div>
+                              <div style={{flex:1}}>
+                                {[
+                                  {label:"Presupuesto", value:fmt(o.presupuesto), color:t.textMuted},
+                                  {label:"Ejecutado",   value:fmt(o.gastado),     color:t.blue},
+                                  {label:"Disponible",  value:fmt(o.presupuesto-o.gastado), color:t.green},
+                                ].map((row,j)=>(
+                                  <div key={j} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:j<2?`1px solid ${t.border}`:"none"}}>
+                                    <span style={{fontSize:11,color:t.textSub}}>{row.label}</span>
+                                    <span style={{fontSize:12,fontWeight:700,color:row.color}}>{row.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
           {activeTab==="reportes"&&(
             <div>
-              <div style={{background:`linear-gradient(135deg,${t.blue}18,${t.blue}08)`,border:`1px solid ${t.blue}33`,borderRadius:20,padding:28,marginBottom:24}}>
-                <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:18}}>
-                  <div style={{width:48,height:48,borderRadius:14,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🤖</div>
-                  <div>
-                    <h2 style={{fontSize:16,fontWeight:700,color:t.text,margin:0}}>Reporte Semanal — Generado por IA</h2>
-                    <p style={{fontSize:12,color:t.textMuted,margin:"4px 0 0"}}>Lunes 9 marzo · Edificio Los Aromos</p>
+              {/* Notificación — reporte esperando aprobación */}
+              <div style={{background:t.yellow+"0D",border:`1.5px solid ${t.yellow}44`,borderRadius:16,padding:"14px 18px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:20}}>🔔</span>
+                <div style={{flex:1}}>
+                  <p style={{fontSize:13,fontWeight:700,color:t.yellow,margin:0}}>Carlos M. marcó el reporte como listo</p>
+                  <p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>Semana 10 · Edif. Los Aromos · Hace 2 horas</p>
+                </div>
+                <span style={{fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:20,background:t.yellow+"22",color:t.yellow}}>Pendiente tu aprobación</span>
+              </div>
+
+              {/* Reporte */}
+              <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:20,overflow:"hidden",boxShadow:t.shadow}}>
+                <div style={{padding:"20px 24px",borderBottom:`1px solid ${t.border}`,display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🤖</div>
+                  <div style={{flex:1}}>
+                    <h2 style={{fontSize:15,fontWeight:700,color:t.text,margin:0}}>Reporte Semanal — Semana 10</h2>
+                    <p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>Edif. Los Aromos · Generado por IA · Editado por Carlos M.</p>
                   </div>
-                  <button style={{marginLeft:"auto",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:10,padding:"10px 20px",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>📤 Enviar al Mandante</button>
+                  <span style={{fontSize:11,fontWeight:700,padding:"5px 12px",borderRadius:20,background:t.yellow+"22",color:t.yellow}}>⏳ Borrador</span>
                 </div>
-                <div style={{background:t.bgCard,borderRadius:14,padding:20,borderLeft:`4px solid ${t.blue}`,lineHeight:1.8,fontSize:14,color:t.textSub}}>
-                  <p style={{marginBottom:12}}>Avance acumulado <strong style={{color:t.blue}}>67%</strong>, con retraso de <strong style={{color:t.red}}>8 días</strong> por lluvias del 3 de marzo. Presupuesto ejecutado <strong style={{color:t.green}}>$45.2M</strong> de $68M (66%), alineado con avance físico.</p>
-                  <p style={{padding:"12px 16px",background:t.yellow+"18",borderRadius:10,borderLeft:`3px solid ${t.yellow}`,color:t.yellow,fontWeight:600,fontSize:13,margin:0}}>⚡ Recomendación: Agregar 3 fierreros para recuperar retraso antes del hito de estructura (30 marzo).</p>
+
+                {/* Contenido editable */}
+                <div style={{padding:"24px"}}>
+                  <textarea defaultValue={`Semana del 3 al 7 de marzo. Se completó el moldaje de losa nivel 3 y se inició el armado de fierro. Personal promedio: 14 trabajadores. Clima variable con lluvia el miércoles que detuvo faenas por 4 horas.\n\nAvance acumulado 67%, plan 75%. La partida de Albañilería presenta el mayor retraso relativo.`}
+                    rows={6}
+                    style={{width:"100%",background:t.bgCard2,border:`1.5px solid ${t.border}`,borderRadius:12,padding:"14px 16px",color:t.text,fontSize:14,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",boxSizing:"border-box",lineHeight:1.7}}
+                    onFocus={e=>e.target.style.border=`1.5px solid ${t.blue}`}
+                    onBlur={e=>e.target.style.border=`1.5px solid ${t.border}`}/>
+                  <p style={{fontSize:11,color:t.textMuted,margin:"8px 0 0"}}>✏️ Puedes editar el reporte antes de enviarlo al mandante</p>
                 </div>
+
+                {/* Acciones */}
+                <div style={{padding:"16px 24px 24px",display:"flex",gap:12,borderTop:`1px solid ${t.border}`}}>
+                  <button style={{flex:1,padding:"12px",background:t.bgCard2,border:`1px solid ${t.border}`,borderRadius:12,color:t.textSub,fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                    ✕ Devolver al jefe
+                  </button>
+                  <button style={{flex:2,padding:"12px",background:`linear-gradient(135deg,${t.green},#059669)`,border:"none",borderRadius:12,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:`0 4px 16px ${t.green}44`}}>
+                    ✓ Aprobar y enviar al mandante
+                  </button>
+                </div>
+              </div>
+
+              {/* Historial reportes anteriores */}
+              <div style={{marginTop:20}}>
+                <h3 style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:12}}>Reportes anteriores</h3>
+                {[
+                  {semana:"Semana 9", fecha:"2 mar", estado:"enviado", obra:"Los Aromos"},
+                  {semana:"Semana 8", fecha:"23 feb", estado:"enviado", obra:"El Roble"},
+                  {semana:"Semana 7", fecha:"16 feb", estado:"enviado", obra:"Los Aromos"},
+                ].map((r,i)=>(
+                  <div key={i} style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:12,padding:"12px 16px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{flex:1}}>
+                      <p style={{fontSize:13,fontWeight:600,color:t.text,margin:0}}>{r.semana} · {r.obra}</p>
+                      <p style={{fontSize:11,color:t.textMuted,margin:"2px 0 0"}}>{r.fecha}</p>
+                    </div>
+                    <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:t.green+"22",color:t.green}}>✓ Enviado</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
           {activeTab==="registro"&&(
             <RegistroDiario t={t}/>
-          )}
-
-          {activeTab==="materiales"&&(
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:400,gap:16}}>
-              <div style={{fontSize:48}}>📦</div>
-              <h2 style={{fontSize:20,fontWeight:700,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Control de Materiales</h2>
-              <p style={{color:t.textMuted,fontSize:14,textAlign:"center",maxWidth:300}}>Próxima pantalla — en construcción 🚧</p>
-            </div>
           )}
 
           {activeTab==="mandante"&&(
@@ -1238,9 +1270,8 @@ const OBRAS_RD = ["Edif. Los Aromos","Cond. El Roble","Casa Familia Torres"];
 const CLIMAS_RD = [{icon:"☀️",label:"Despejado"},{icon:"⛅",label:"Nublado parcial"},{icon:"☁️",label:"Nublado"},{icon:"🌧️",label:"Lluvia"},{icon:"⛈️",label:"Tormenta"},{icon:"🌬️",label:"Viento fuerte"},{icon:"🌫️",label:"Neblina"}];
 const GREMIOS_RD = ["Albañilería","Estructura","Moldaje","Hormigonado","Gasfitería","Electricidad","Pintura","Carpintería","Terminaciones"];
 const PARTIDAS_RD = ["Fundaciones","Estructura","Albañilería","Instalaciones eléctricas","Instalaciones sanitarias","Moldaje y hormigón","Terminaciones","Pintura","Pavimentos"];
-const UNIDADES_RD = ["m³","m²","ml","kg","ton","und","gl","sacos","viajes"];
-const PASOS_RD = [{id:1,label:"General",icon:"📋"},{id:2,label:"Personal",icon:"👷"},{id:3,label:"Actividades",icon:"✏️"},{id:4,label:"Materiales",icon:"📦"},{id:5,label:"Observaciones",icon:"📝"}];
-const initForm = () => ({obra:OBRAS_RD[0],fecha:new Date().toISOString().split("T")[0],clima:0,temperatura:"",personalTotal:14,cuadrillas:[{gremio:"Albañilería",cantidad:6}],actividades:[{partida:"Albañilería",descripcion:"",avance:0}],materiales:[{nombre:"",cantidad:"",unidad:"m³",observacion:""}],equipos:"",incidentes:"",observaciones:""});
+const PASOS_RD = [{id:1,label:"General",icon:"📋"},{id:2,label:"Personal",icon:"👷"},{id:3,label:"Actividades",icon:"✏️"},{id:4,label:"Observaciones",icon:"📝"}];
+const initForm = () => ({obra:OBRAS_RD[0],fecha:new Date().toISOString().split("T")[0],clima:0,temperatura:"",personalTotal:14,cuadrillas:[{gremio:"Albañilería",cantidad:6}],actividades:[{partida:"Albañilería",descripcion:"",avance:0}],equipos:"",incidentes:"",observaciones:""});
 
 function RDInput({label,value,onChange,type="text",placeholder="",style={}}) {
   return (
@@ -1289,9 +1320,6 @@ function RegistroDiario({t}) {
   const addAct = () => setForm({...form,actividades:[...form.actividades,{partida:PARTIDAS_RD[0],descripcion:"",avance:0}]});
   const remAct = i => setForm({...form,actividades:form.actividades.filter((_,j)=>j!==i)});
   const setAct = (i,f,v) => { const a=[...form.actividades]; a[i]={...a[i],[f]:v}; setForm({...form,actividades:a}); };
-  const addMat = () => setForm({...form,materiales:[...form.materiales,{nombre:"",cantidad:"",unidad:"m³",observacion:""}]});
-  const remMat = i => setForm({...form,materiales:form.materiales.filter((_,j)=>j!==i)});
-  const setMat = (i,f,v) => { const a=[...form.materiales]; a[i]={...a[i],[f]:v}; setForm({...form,materiales:a}); };
   const totalCalc = form.cuadrillas.reduce((s,c)=>s+(+c.cantidad||0),0);
 
   const sel = (v,cur,col) => ({padding:"11px 12px",background:"#0D1420",border:`1.5px solid ${v===cur?"#3B82F6":"#1e2d45"}`,borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",width:"100%"});
@@ -1319,7 +1347,7 @@ function RegistroDiario({t}) {
         <span style={{fontSize:22}}>📋</span>
         <div><h2 style={{fontSize:17,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Resumen del Registro</h2><p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>Revisa antes de guardar</p></div>
       </div>
-      {[{label:"Obra",value:form.obra},{label:"Fecha",value:new Date(form.fecha+"T12:00").toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})},{label:"Clima",value:`${CLIMAS_RD[form.clima].icon} ${CLIMAS_RD[form.clima].label}${form.temperatura?` · ${form.temperatura}°C`:""}`},{label:"Personal",value:`${form.personalTotal} personas`},{label:"Actividades",value:`${form.actividades.length} registradas`},{label:"Materiales",value:form.materiales.filter(m=>m.nombre).length+" registrados"}].map((row,i)=>(
+      {[{label:"Obra",value:form.obra},{label:"Fecha",value:new Date(form.fecha+"T12:00").toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})},{label:"Clima",value:`${CLIMAS_RD[form.clima].icon} ${CLIMAS_RD[form.clima].label}${form.temperatura?` · ${form.temperatura}°C`:""}`},{label:"Personal",value:`${form.personalTotal} personas`},{label:"Actividades",value:`${form.actividades.length} registradas`}].map((row,i)=>(
         <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"11px 0",borderBottom:`1px solid ${t.border}`}}>
           <span style={{fontSize:13,color:t.textMuted}}>{row.label}</span>
           <span style={{fontSize:13,fontWeight:600,color:t.text}}>{row.value}</span>
@@ -1441,37 +1469,6 @@ function RegistroDiario({t}) {
       {/* Paso 4 */}
       {paso===4&&(
         <div>
-          <RDCard title="Materiales Utilizados" icon="📦">
-            {form.materiales.map((m,i)=>(
-              <div key={i} style={{background:"#1a2235",borderRadius:16,padding:16,marginBottom:12,border:"1px solid #1e2d45"}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
-                  <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#F59E0B22",color:"#F59E0B"}}>Material {i+1}</span>
-                  <button onClick={()=>remMat(i)} style={{background:"none",border:"none",color:"#EF4444",fontSize:18,cursor:"pointer"}}>×</button>
-                </div>
-                <input value={m.nombre} onChange={e=>setMat(i,"nombre",e.target.value)} placeholder="Nombre del material..."
-                  style={{width:"100%",padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:10}}/>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
-                  <input type="number" value={m.cantidad} onChange={e=>setMat(i,"cantidad",e.target.value)} placeholder="Cantidad"
-                    style={{padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none"}}/>
-                  <select value={m.unidad} onChange={e=>setMat(i,"unidad",e.target.value)} style={{padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none"}}>
-                    {UNIDADES_RD.map(u=><option key={u} value={u} style={{background:"#111827"}}>{u}</option>)}
-                  </select>
-                </div>
-                <input value={m.observacion} onChange={e=>setMat(i,"observacion",e.target.value)} placeholder="Observación (opcional)"
-                  style={{width:"100%",padding:"10px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",boxSizing:"border-box"}}/>
-              </div>
-            ))}
-            <button onClick={addMat} style={{background:"none",border:"1px dashed #3B82F666",borderRadius:10,padding:"8px 14px",color:"#3B82F6",fontSize:12,fontWeight:600,cursor:"pointer",width:"100%"}}>+ Agregar material</button>
-          </RDCard>
-          <RDCard title="Equipos y Maquinaria" icon="🚧">
-            <RDTextarea value={form.equipos} onChange={v=>setForm({...form,equipos:v})} placeholder="Ej: Grúa torre activa (8:00-17:00), Hormigonera en uso..." rows={3}/>
-          </RDCard>
-        </div>
-      )}
-
-      {/* Paso 5 */}
-      {paso===5&&(
-        <div>
           <RDCard title="Incidentes y Seguridad" icon="⚠️">
             <div style={{background:"#EF444408",border:"1px solid #EF444422",borderRadius:12,padding:12,marginBottom:12}}>
               <p style={{fontSize:12,color:"#EF4444",margin:0,fontWeight:600}}>Registra accidentes, cuasi-accidentes o situaciones de riesgo.</p>
@@ -1497,9 +1494,9 @@ function RegistroDiario({t}) {
       {/* Navegación */}
       <div style={{display:"flex",gap:12,marginTop:8}}>
         {paso>1&&<button onClick={()=>setPaso(paso-1)} style={{flex:1,padding:"13px",background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:14,color:t.textSub,fontSize:14,fontWeight:600,cursor:"pointer"}}>← Anterior</button>}
-        <button onClick={()=>paso===5?setVista("resumen"):setPaso(paso+1)}
+        <button onClick={()=>paso===4?setVista("resumen"):setPaso(paso+1)}
           style={{flex:2,padding:"13px",background:"linear-gradient(135deg,#3B82F6,#1D4ED8)",border:"none",borderRadius:14,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px #3B82F644"}}>
-          {paso===5?"Revisar registro →":"Siguiente →"}
+          {paso===4?"Revisar registro →":"Siguiente →"}
         </button>
       </div>
     </div>
