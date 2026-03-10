@@ -87,46 +87,103 @@ const ProgressBar = ({value,plan,color,t}) => (
 
 function LoginScreen({onLogin,t,darkMode,toggleDark}) {
   const [loading,setLoading] = React.useState(false);
+  const [email,setEmail] = React.useState("");
+  const [pass,setPass]   = React.useState("");
+  const [vista,setVista] = React.useState("login"); // "login" | "registro"
   const handleLogin = () => { setLoading(true); setTimeout(()=>{setLoading(false);onLogin();},1400); };
   return (
     <div style={{minHeight:"100vh",background:t.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,
       backgroundImage:darkMode?"radial-gradient(ellipse at 20% 50%,#1e3a5f22 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#1e40af18 0%,transparent 50%)":"radial-gradient(ellipse at 20% 50%,#dbeafe 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#bfdbfe 0%,transparent 50%)"}}>
       <div style={{width:"100%",maxWidth:420}}>
-        <div style={{textAlign:"center",marginBottom:40}}>
-          <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:64,height:64,borderRadius:20,marginBottom:16,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,boxShadow:`0 8px 32px ${t.blue}44`}}>
+
+        {/* Logo */}
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:64,height:64,borderRadius:20,marginBottom:14,background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,boxShadow:`0 8px 32px ${t.blue}44`}}>
             <span style={{fontSize:28}}>🏗️</span>
           </div>
-          <h1 style={{fontFamily:"'Sora',sans-serif",fontSize:28,fontWeight:800,color:t.text,letterSpacing:"-0.5px"}}>
+          <h1 style={{fontFamily:"'Sora',sans-serif",fontSize:28,fontWeight:800,color:t.text,letterSpacing:"-0.5px",margin:0}}>
             Obra<span style={{color:t.blue}}>Clara</span>
           </h1>
           <p style={{fontSize:13,color:t.textSub,marginTop:6}}>Control de obras inteligente</p>
         </div>
-        <div style={{background:t.bgCard,borderRadius:24,padding:32,border:`1px solid ${t.border}`,boxShadow:t.shadow}}>
-          <h2 style={{fontSize:18,fontWeight:700,color:t.text,marginBottom:6,fontFamily:"'Sora',sans-serif"}}>Bienvenido de vuelta</h2>
-          <p style={{fontSize:13,color:t.textSub,marginBottom:28}}>Ingresa a tu cuenta para continuar</p>
-          <div style={{marginBottom:16}}>
-            <label style={{fontSize:12,fontWeight:600,color:t.textSub,display:"block",marginBottom:6}}>Email</label>
-            <input defaultValue="roberto@obraclara.cl"
-              style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box"}}/>
-          </div>
-          <div style={{marginBottom:24}}>
-            <label style={{fontSize:12,fontWeight:600,color:t.textSub,display:"block",marginBottom:6}}>Contraseña</label>
-            <input type="password" defaultValue="12345678"
-              style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box"}}/>
-            <div style={{textAlign:"right",marginTop:6}}>
-              <span style={{fontSize:12,color:t.blue,cursor:"pointer"}}>¿Olvidaste tu contraseña?</span>
-            </div>
-          </div>
-          <button onClick={handleLogin}
-            style={{width:"100%",padding:"14px",background:loading?t.border:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:700,cursor:loading?"default":"pointer",fontFamily:"'Sora',sans-serif",boxShadow:loading?"none":`0 4px 20px ${t.blue}44`,transition:"all 0.2s"}}>
-            {loading?"⏳ Ingresando...":"Ingresar →"}
-          </button>
-          <p style={{textAlign:"center",fontSize:12,color:t.textMuted,marginTop:20}}>
-            ¿No tienes cuenta? <span style={{color:t.blue,cursor:"pointer",fontWeight:600}}>Prueba gratis 14 días</span>
-          </p>
+
+        {/* Tabs login / registro */}
+        <div style={{display:"flex",background:t.bgCard,borderRadius:16,padding:5,marginBottom:20,border:`1px solid ${t.border}`}}>
+          {[{id:"login",label:"Ingresar"},{id:"registro",label:"Crear cuenta"}].map(tab=>(
+            <button key={tab.id} onClick={()=>setVista(tab.id)}
+              style={{flex:1,padding:"10px",borderRadius:12,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,transition:"all 0.2s",
+                background:vista===tab.id?`linear-gradient(135deg,${t.blue},${t.blueDark})`:"transparent",
+                color:vista===tab.id?"#fff":t.textMuted,
+                boxShadow:vista===tab.id?`0 4px 12px ${t.blue}44`:"none"}}>
+              {tab.label}
+            </button>
+          ))}
         </div>
-        <div style={{textAlign:"center",marginTop:20}}>
-          <button onClick={toggleDark} style={{background:"none",border:`1px solid ${t.border}`,borderRadius:20,padding:"6px 16px",color:t.textSub,fontSize:12,cursor:"pointer"}}>
+
+        {/* Card */}
+        <div style={{background:t.bgCard,borderRadius:24,padding:28,border:`1px solid ${t.border}`,boxShadow:t.shadow}}>
+          {vista==="login" ? (
+            <>
+              <h2 style={{fontSize:17,fontWeight:700,color:t.text,marginBottom:4,fontFamily:"'Sora',sans-serif"}}>Bienvenido de vuelta</h2>
+              <p style={{fontSize:13,color:t.textSub,marginBottom:22}}>Ingresa a tu cuenta para continuar</p>
+              <div style={{marginBottom:14}}>
+                <label style={{fontSize:11,fontWeight:600,color:t.textSub,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>Email</label>
+                <input value={email} onChange={e=>setEmail(e.target.value)}
+                  placeholder="tuemail@tumail.cl"
+                  style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box",transition:"border 0.2s"}}
+                  onFocus={e=>e.target.style.border=`1.5px solid ${t.blue}`}
+                  onBlur={e=>e.target.style.border=`1.5px solid ${t.border}`}/>
+              </div>
+              <div style={{marginBottom:22}}>
+                <label style={{fontSize:11,fontWeight:600,color:t.textSub,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>Contraseña</label>
+                <input type="password" value={pass} onChange={e=>setPass(e.target.value)}
+                  placeholder="••••••••"
+                  style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box",transition:"border 0.2s"}}
+                  onFocus={e=>e.target.style.border=`1.5px solid ${t.blue}`}
+                  onBlur={e=>e.target.style.border=`1.5px solid ${t.border}`}/>
+                <div style={{textAlign:"right",marginTop:6}}>
+                  <span style={{fontSize:12,color:t.blue,cursor:"pointer"}}>¿Olvidaste tu contraseña?</span>
+                </div>
+              </div>
+              <button onClick={handleLogin}
+                style={{width:"100%",padding:"14px",background:loading?t.border:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:700,cursor:loading?"default":"pointer",fontFamily:"'Sora',sans-serif",boxShadow:loading?"none":`0 4px 20px ${t.blue}44`,transition:"all 0.2s"}}>
+                {loading?"⏳ Ingresando...":"Ingresar →"}
+              </button>
+            </>
+          ) : (
+            <>
+              <h2 style={{fontSize:17,fontWeight:700,color:t.text,marginBottom:4,fontFamily:"'Sora',sans-serif"}}>Crea tu cuenta gratis</h2>
+              <p style={{fontSize:13,color:t.textSub,marginBottom:22}}>14 días gratis · Sin tarjeta de crédito</p>
+              {[
+                {label:"Nombre completo",   placeholder:"Juan Pérez",         type:"text"},
+                {label:"Email",             placeholder:"tuemail@tumail.cl",  type:"email"},
+                {label:"Empresa / Constructora", placeholder:"Constructora XYZ", type:"text"},
+                {label:"Contraseña",        placeholder:"Mínimo 8 caracteres",type:"password"},
+              ].map((f,i)=>(
+                <div key={i} style={{marginBottom:14}}>
+                  <label style={{fontSize:11,fontWeight:600,color:t.textSub,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>{f.label}</label>
+                  <input type={f.type} placeholder={f.placeholder}
+                    style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box",transition:"border 0.2s"}}
+                    onFocus={e=>e.target.style.border=`1.5px solid ${t.blue}`}
+                    onBlur={e=>e.target.style.border=`1.5px solid ${t.border}`}/>
+                </div>
+              ))}
+              <button onClick={handleLogin}
+                style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${t.green},#059669)`,border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"'Sora',sans-serif",boxShadow:`0 4px 20px ${t.green}44`,transition:"all 0.2s",marginTop:4}}>
+                Crear cuenta gratis →
+              </button>
+              <p style={{textAlign:"center",fontSize:11,color:t.textMuted,marginTop:14}}>
+                Al registrarte aceptas los <span style={{color:t.blue,cursor:"pointer"}}>Términos de uso</span>
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Toggle día/noche */}
+        <div style={{textAlign:"center",marginTop:18}}>
+          <button onClick={toggleDark} style={{background:"none",border:`1px solid ${t.border}`,borderRadius:20,padding:"7px 18px",color:t.textSub,fontSize:12,cursor:"pointer",transition:"all 0.2s"}}
+            onMouseEnter={e=>e.target.style.borderColor=t.blue}
+            onMouseLeave={e=>e.target.style.borderColor=t.border}>
             {darkMode?"☀️ Modo día":"🌙 Modo noche"}
           </button>
         </div>
@@ -503,7 +560,7 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
 }
 
 function App() {
-  const [darkMode,setDarkMode] = React.useState(true);
+  const [darkMode,setDarkMode] = React.useState(false);
   const [loggedIn,setLoggedIn] = React.useState(false);
   const [view,setView] = React.useState("web");
   const t = themes[darkMode?"dark":"light"];
