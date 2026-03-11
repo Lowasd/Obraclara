@@ -7,6 +7,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
@@ -21,6 +22,11 @@
 </head>
 <body>
 <div id="root"></div>
+<script>
+  const SUPA_URL = "https://ngrpetzpmnfmyelptpqn.supabase.co";
+  const SUPA_KEY = "sb_publishable_XbyfLFSKIHmaLE2C0yfwvQ_JO1ZKQex";
+  const supabase = supabase_js.createClient(SUPA_URL, SUPA_KEY);
+</script>
 <script type="text/babel">
 
 const themes = {
@@ -110,11 +116,46 @@ function LogoIcon({size=40}) {
 }
 
 function LoginScreen({onLogin,t,darkMode,toggleDark}) {
-  const [loading,setLoading] = React.useState(false);
-  const [email,setEmail] = React.useState("");
-  const [pass,setPass]   = React.useState("");
-  const [vista,setVista] = React.useState("login"); // "login" | "registro"
-  const handleLogin = () => { setLoading(true); setTimeout(()=>{setLoading(false);onLogin();},1400); };
+  const [loading,setLoading]   = React.useState(false);
+  const [email,setEmail]       = React.useState("");
+  const [pass,setPass]         = React.useState("");
+  const [nombre,setNombre]     = React.useState("");
+  const [empresa,setEmpresa]   = React.useState("");
+  const [error,setError]       = React.useState("");
+  const [vista,setVista]       = React.useState("login");
+
+  const handleLogin = async () => {
+    setError(""); setLoading(true);
+    const {error:err} = await supabase.auth.signInWithPassword({email,password:pass});
+    setLoading(false);
+    if(err) { setError("Email o contraseña incorrectos"); return; }
+    onLogin();
+  };
+
+  const handleRegistro = async () => {
+    setError(""); setLoading(true);
+    const {error:err} = await supabase.auth.signUp({
+      email, password:pass,
+      options:{ data:{ nombre, empresa } }
+    });
+    setLoading(false);
+    if(err) { setError(err.message); return; }
+    setError(""); setVista("verificar");
+  };
+
+  if(vista==="verificar") return (
+    <div style={{minHeight:"100vh",background:t.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{width:"100%",maxWidth:420,textAlign:"center"}}>
+        <div style={{width:72,height:72,borderRadius:"50%",background:"#10B98118",border:"2px solid #10B981",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,margin:"0 auto 20px"}}>📬</div>
+        <h2 style={{fontFamily:"'Sora',sans-serif",fontSize:22,fontWeight:800,color:t.text,marginBottom:10}}>Revisa tu email</h2>
+        <p style={{fontSize:14,color:t.textSub,marginBottom:6}}>Te enviamos un link de confirmación a:</p>
+        <p style={{fontSize:14,fontWeight:700,color:t.blue,marginBottom:24}}>{email}</p>
+        <p style={{fontSize:12,color:t.textMuted,marginBottom:20}}>Confirma tu cuenta y luego vuelve aquí para ingresar.</p>
+        <button onClick={()=>setVista("login")} style={{background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:14,padding:"13px 32px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>Ir a Ingresar →</button>
+      </div>
+    </div>
+  );
+
   return (
     <div style={{minHeight:"100vh",background:t.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,
       backgroundImage:darkMode?"radial-gradient(ellipse at 20% 50%,#1e3a5f22 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#1e40af18 0%,transparent 50%)":"radial-gradient(ellipse at 20% 50%,#dbeafe 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#bfdbfe 0%,transparent 50%)"}}>
@@ -131,10 +172,10 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
           <p style={{fontSize:13,color:t.textSub,marginTop:6}}>Control de obras inteligente</p>
         </div>
 
-        {/* Tabs login / registro */}
+        {/* Tabs */}
         <div style={{display:"flex",background:t.bgCard,borderRadius:16,padding:5,marginBottom:20,border:`1px solid ${t.border}`}}>
           {[{id:"login",label:"Ingresar"},{id:"registro",label:"Crear cuenta"}].map(tab=>(
-            <button key={tab.id} onClick={()=>setVista(tab.id)}
+            <button key={tab.id} onClick={()=>{setVista(tab.id);setError("");}}
               style={{flex:1,padding:"10px",borderRadius:12,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,transition:"all 0.2s",
                 background:vista===tab.id?`linear-gradient(135deg,${t.blue},${t.blueDark})`:"transparent",
                 color:vista===tab.id?"#fff":t.textMuted,
@@ -146,22 +187,31 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
 
         {/* Card */}
         <div style={{background:t.bgCard,borderRadius:24,padding:28,border:`1px solid ${t.border}`,boxShadow:t.shadow}}>
+
+          {/* Error */}
+          {error&&(
+            <div style={{background:"#EF444418",border:"1px solid #EF444433",borderRadius:10,padding:"10px 14px",marginBottom:16,display:"flex",gap:8,alignItems:"center"}}>
+              <span>⚠️</span>
+              <p style={{fontSize:12,color:"#EF4444",margin:0,fontWeight:600}}>{error}</p>
+            </div>
+          )}
+
           {vista==="login" ? (
             <>
               <h2 style={{fontSize:17,fontWeight:700,color:t.text,marginBottom:4,fontFamily:"'Sora',sans-serif"}}>Bienvenido de vuelta</h2>
               <p style={{fontSize:13,color:t.textSub,marginBottom:22}}>Ingresa a tu cuenta para continuar</p>
               <div style={{marginBottom:14}}>
                 <label style={{fontSize:11,fontWeight:600,color:t.textSub,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>Email</label>
-                <input value={email} onChange={e=>setEmail(e.target.value)}
-                  placeholder="tuemail@tumail.cl"
+                <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="tuemail@tumail.cl"
+                  onKeyDown={e=>e.key==="Enter"&&handleLogin()}
                   style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box",transition:"border 0.2s"}}
                   onFocus={e=>e.target.style.border=`1.5px solid ${t.blue}`}
                   onBlur={e=>e.target.style.border=`1.5px solid ${t.border}`}/>
               </div>
               <div style={{marginBottom:22}}>
                 <label style={{fontSize:11,fontWeight:600,color:t.textSub,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>Contraseña</label>
-                <input type="password" value={pass} onChange={e=>setPass(e.target.value)}
-                  placeholder="••••••••"
+                <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••"
+                  onKeyDown={e=>e.key==="Enter"&&handleLogin()}
                   style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box",transition:"border 0.2s"}}
                   onFocus={e=>e.target.style.border=`1.5px solid ${t.blue}`}
                   onBlur={e=>e.target.style.border=`1.5px solid ${t.border}`}/>
@@ -169,7 +219,7 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
                   <span style={{fontSize:12,color:t.blue,cursor:"pointer"}}>¿Olvidaste tu contraseña?</span>
                 </div>
               </div>
-              <button onClick={handleLogin}
+              <button onClick={handleLogin} disabled={loading}
                 style={{width:"100%",padding:"14px",background:loading?t.border:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:700,cursor:loading?"default":"pointer",fontFamily:"'Sora',sans-serif",boxShadow:loading?"none":`0 4px 20px ${t.blue}44`,transition:"all 0.2s"}}>
                 {loading?"⏳ Ingresando...":"Ingresar →"}
               </button>
@@ -177,25 +227,24 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
           ) : (
             <>
               <h2 style={{fontSize:17,fontWeight:700,color:t.text,marginBottom:4,fontFamily:"'Sora',sans-serif"}}>Crea tu cuenta gratis</h2>
-              <p style={{fontSize:15,fontWeight:600,color:t.textSub,marginBottom:4}}>El registro que tu obra necesitaba</p>
               <p style={{fontSize:13,color:t.textMuted,marginBottom:22}}>1 mes gratis · Sin tarjeta de crédito</p>
               {[
-                {label:"Nombre completo",   placeholder:"Juan Pérez",         type:"text"},
-                {label:"Email",             placeholder:"tuemail@tumail.cl",  type:"email"},
-                {label:"Empresa / Constructora", placeholder:"Constructora XYZ", type:"text"},
-                {label:"Contraseña",        placeholder:"Mínimo 8 caracteres",type:"password"},
+                {label:"Nombre completo",      placeholder:"Juan Pérez",          type:"text",    val:nombre,  set:setNombre},
+                {label:"Email",                placeholder:"tuemail@tumail.cl",   type:"email",   val:email,   set:setEmail},
+                {label:"Empresa / Constructora",placeholder:"Constructora XYZ",  type:"text",    val:empresa, set:setEmpresa},
+                {label:"Contraseña",           placeholder:"Mínimo 8 caracteres", type:"password",val:pass,    set:setPass},
               ].map((f,i)=>(
                 <div key={i} style={{marginBottom:14}}>
                   <label style={{fontSize:11,fontWeight:600,color:t.textSub,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>{f.label}</label>
-                  <input type={f.type} placeholder={f.placeholder}
+                  <input type={f.type} placeholder={f.placeholder} value={f.val} onChange={e=>f.set(e.target.value)}
                     style={{width:"100%",padding:"12px 14px",background:t.inputBg,border:`1.5px solid ${t.border}`,borderRadius:12,color:t.text,fontSize:14,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box",transition:"border 0.2s"}}
                     onFocus={e=>e.target.style.border=`1.5px solid ${t.blue}`}
                     onBlur={e=>e.target.style.border=`1.5px solid ${t.border}`}/>
                 </div>
               ))}
-              <button onClick={handleLogin}
-                style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${t.green},#059669)`,border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"'Sora',sans-serif",boxShadow:`0 4px 20px ${t.green}44`,transition:"all 0.2s",marginTop:4}}>
-                Crear cuenta gratis →
+              <button onClick={handleRegistro} disabled={loading}
+                style={{width:"100%",padding:"14px",background:loading?t.border:`linear-gradient(135deg,${t.green},#059669)`,border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:700,cursor:loading?"default":"pointer",fontFamily:"'Sora',sans-serif",boxShadow:loading?"none":`0 4px 20px ${t.green}44`,transition:"all 0.2s",marginTop:4}}>
+                {loading?"⏳ Creando cuenta...":"Crear cuenta gratis →"}
               </button>
               <p style={{textAlign:"center",fontSize:11,color:t.textMuted,marginTop:14}}>
                 Al registrarte aceptas los <span style={{color:t.blue,cursor:"pointer"}}>Términos de uso</span>
@@ -217,9 +266,12 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
   );
 }
 
-function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
+function DashboardWeb({t,darkMode,toggleDark,onLogout,session}) {
   const [activeTab,setActiveTab] = React.useState("dashboard");
   const [activeObra,setActiveObra] = React.useState(-1);
+  const nombre = session?.user?.user_metadata?.nombre || session?.user?.email?.split("@")[0] || "Usuario";
+  const empresa = session?.user?.user_metadata?.empresa || "Mi Constructora";
+  const iniciales = nombre.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2);
 
   const navItems = [
     {id:"dashboard",icon:"▦", label:"Mis Obras"},
@@ -253,10 +305,10 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout}) {
         </nav>
         <div style={{padding:"12px 16px",borderTop:`1px solid ${t.border}`}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-            <div style={{width:32,height:32,borderRadius:"50%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff"}}>RV</div>
+            <div style={{width:32,height:32,borderRadius:"50%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff"}}>{iniciales}</div>
             <div>
-              <div style={{fontSize:12,fontWeight:600,color:t.text}}>Roberto V.</div>
-              <div style={{fontSize:10,color:t.textMuted}}>Constructor Civil</div>
+              <div style={{fontSize:12,fontWeight:600,color:t.text}}>{nombre}</div>
+              <div style={{fontSize:10,color:t.textMuted}}>{empresa}</div>
             </div>
           </div>
           <div style={{display:"flex",gap:6}}>
@@ -1088,11 +1140,12 @@ function FotoRapidaModal({t,onClose,onEnviar}) {
   );
 }
 
-function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
+function DashboardMobile({t,darkMode,toggleDark,onLogout,session}) {
   const [tab,setTab] = React.useState("home");
   const [obraIdx,setObraIdx] = React.useState(0);
   const [fotoRapida,setFotoRapida] = React.useState(false);
-  const [descFoto,setDescFoto] = React.useState("");
+  const nombre = session?.user?.user_metadata?.nombre || session?.user?.email?.split("@")[0] || "Usuario";
+  const iniciales = nombre.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2);
   const [fotosHoy,setFotosHoy] = React.useState([
     {hora:"08:30",desc:"Inicio moldaje losa nivel 3",emoji:"🏗️"},
     {hora:"11:00",desc:"Armado de fierro completado",emoji:"⚙️"},
@@ -1113,12 +1166,12 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout}) {
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:22}}>
                 <div>
                   <p style={{fontSize:12,color:t.textMuted,margin:0}}>Buenos días 👋</p>
-                  <h1 style={{fontSize:22,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Carlos M.</h1>
-                  <p style={{fontSize:11,color:t.blue,margin:"2px 0 0",fontWeight:600}}>Jefe de Terreno</p>
+                  <h1 style={{fontSize:22,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>{nombre}</h1>
+                  <p style={{fontSize:11,color:t.blue,margin:"2px 0 0",fontWeight:600}}>{session?.user?.email}</p>
                 </div>
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={toggleDark} className="mob-btn" style={{width:38,height:38,borderRadius:12,background:t.bgCard,border:`1px solid ${t.border}`,cursor:"pointer",fontSize:16}}>{darkMode?"☀️":"🌙"}</button>
-                  <div style={{width:38,height:38,borderRadius:"50%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff"}}>CM</div>
+                  <div style={{width:38,height:38,borderRadius:"50%",background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff"}}>{iniciales}</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:10,marginBottom:16}}>
@@ -1548,12 +1601,38 @@ function RegistroDiario({t}) {
 
 function App() {
   const [darkMode,setDarkMode] = React.useState(false);
-  const [loggedIn,setLoggedIn] = React.useState(false);
-  const [view,setView] = React.useState("web");
+  const [session,setSession]   = React.useState(null);
+  const [loading,setLoading]   = React.useState(true);
+  const [view,setView]         = React.useState("web");
   const t = themes[darkMode?"dark":"light"];
   const toggleDark = () => setDarkMode(d=>!d);
 
-  if(!loggedIn) return <LoginScreen onLogin={()=>setLoggedIn(true)} t={t} darkMode={darkMode} toggleDark={toggleDark}/>;
+  React.useEffect(()=>{
+    // Revisar sesión existente al cargar
+    supabase.auth.getSession().then(({data:{session}})=>{
+      setSession(session);
+      setLoading(false);
+    });
+    // Escuchar cambios de sesión (login/logout)
+    const {data:{subscription}} = supabase.auth.onAuthStateChange((_,session)=>{
+      setSession(session);
+    });
+    return ()=>subscription.unsubscribe();
+  },[]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  };
+
+  if(loading) return (
+    <div style={{minHeight:"100vh",background:"#0A0E1A",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
+      <LogoIcon size={52}/>
+      <p style={{color:"#445566",fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>Cargando...</p>
+    </div>
+  );
+
+  if(!session) return <LoginScreen onLogin={()=>{}} t={t} darkMode={darkMode} toggleDark={toggleDark}/>;
 
   return (
     <div>
@@ -1565,8 +1644,8 @@ function App() {
         ))}
       </div>
       {view==="web"
-        ?<DashboardWeb    t={t} darkMode={darkMode} toggleDark={toggleDark} onLogout={()=>setLoggedIn(false)}/>
-        :<DashboardMobile t={t} darkMode={darkMode} toggleDark={toggleDark} onLogout={()=>setLoggedIn(false)}/>
+        ?<DashboardWeb    t={t} darkMode={darkMode} toggleDark={toggleDark} onLogout={handleLogout} session={session}/>
+        :<DashboardMobile t={t} darkMode={darkMode} toggleDark={toggleDark} onLogout={handleLogout} session={session}/>
       }
     </div>
   );
