@@ -119,6 +119,7 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
   const [loading,setLoading]   = React.useState(false);
   const [email,setEmail]       = React.useState("");
   const [pass,setPass]         = React.useState("");
+  const [pass2,setPass2]       = React.useState("");
   const [nombre,setNombre]     = React.useState("");
   const [empresa,setEmpresa]   = React.useState("");
   const [error,setError]       = React.useState("");
@@ -133,7 +134,10 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
   };
 
   const handleRegistro = async () => {
-    setError(""); setLoading(true);
+    setError("");
+    if(pass !== pass2) { setError("Las contraseñas no coinciden"); return; }
+    if(pass.length < 8) { setError("La contraseña debe tener al menos 8 caracteres"); return; }
+    setLoading(true);
     const {error:err} = await supa.auth.signUp({
       email, password:pass,
       options:{ data:{ nombre, empresa } }
@@ -229,10 +233,11 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
               <h2 style={{fontSize:17,fontWeight:700,color:t.text,marginBottom:4,fontFamily:"'Sora',sans-serif"}}>Crea tu cuenta gratis</h2>
               <p style={{fontSize:13,color:t.textMuted,marginBottom:22}}>1 mes gratis · Sin tarjeta de crédito</p>
               {[
-                {label:"Nombre completo",      placeholder:"Juan Pérez",          type:"text",    val:nombre,  set:setNombre},
-                {label:"Email",                placeholder:"tuemail@tumail.cl",   type:"email",   val:email,   set:setEmail},
-                {label:"Empresa / Constructora",placeholder:"Constructora XYZ",  type:"text",    val:empresa, set:setEmpresa},
-                {label:"Contraseña",           placeholder:"Mínimo 8 caracteres", type:"password",val:pass,    set:setPass},
+                {label:"Nombre completo",       placeholder:"Juan Pérez",           type:"text",     val:nombre,  set:setNombre},
+                {label:"Email",                 placeholder:"tuemail@tumail.cl",    type:"email",    val:email,   set:setEmail},
+                {label:"Empresa / Constructora",placeholder:"Constructora XYZ",     type:"text",     val:empresa, set:setEmpresa},
+                {label:"Contraseña",            placeholder:"Mínimo 8 caracteres",  type:"password", val:pass,    set:setPass},
+                {label:"Confirmar contraseña",  placeholder:"Repite tu contraseña", type:"password", val:pass2,   set:setPass2},
               ].map((f,i)=>(
                 <div key={i} style={{marginBottom:14}}>
                   <label style={{fontSize:11,fontWeight:600,color:t.textSub,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>{f.label}</label>
@@ -325,7 +330,7 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout,session}) {
             <h1 style={{fontFamily:"'Sora',sans-serif",fontSize:18,fontWeight:800,color:t.text,margin:0}}>
               {{dashboard:"Mis Obras",registro:"Registro Diario",reportes:"Reportes IA",mandante:"Portal Mandante"}[activeTab]}
             </h1>
-            <p style={{fontSize:11,color:t.textMuted,margin:0,marginTop:2}}>Lunes 9 de marzo, 2026</p>
+            <p style={{fontSize:11,color:t.textMuted,margin:0,marginTop:2}}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p>
           </div>
           <div style={{display:"flex",gap:10}}>
             <div style={{position:"relative"}}>
@@ -341,8 +346,10 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout,session}) {
             <div>
               {/* Saludo contextual */}
               <div style={{marginBottom:24}}>
-                <h2 style={{fontFamily:"'Sora',sans-serif",fontSize:22,fontWeight:800,color:t.text,margin:"0 0 4px"}}>Buenos días, Roberto 👋</h2>
-                <p style={{fontSize:13,color:t.textMuted,margin:0}}>Lunes 9 de marzo — Esto es lo que requiere tu atención hoy</p>
+                <h2 style={{fontFamily:"'Sora',sans-serif",fontSize:22,fontWeight:800,color:t.text,margin:"0 0 4px"}}>
+                  {(()=>{const h=new Date().getHours();return h<12?"Buenos días":h<19?"Buenas tardes":"Buenas noches"})()}, {nombre} 👋
+                </h2>
+                <p style={{fontSize:13,color:t.textMuted,margin:0}}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})} — Esto es lo que requiere tu atención hoy</p>
               </div>
 
               {/* ZONA CRÍTICA: registros pendientes */}
