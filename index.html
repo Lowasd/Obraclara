@@ -25,7 +25,7 @@
 <script>
   const SUPA_URL = "https://ngrpetzpmnfmyelptpqn.supabase.co";
   const SUPA_KEY = "sb_publishable_XbyfLFSKIHmaLE2C0yfwvQ_JO1ZKQex";
-  const supabase = supabase_js.createClient(SUPA_URL, SUPA_KEY);
+  const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 </script>
 <script type="text/babel">
 
@@ -126,7 +126,7 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
 
   const handleLogin = async () => {
     setError(""); setLoading(true);
-    const {error:err} = await supabase.auth.signInWithPassword({email,password:pass});
+    const {error:err} = await supa.auth.signInWithPassword({email,password:pass});
     setLoading(false);
     if(err) { setError("Email o contraseña incorrectos"); return; }
     onLogin();
@@ -134,7 +134,7 @@ function LoginScreen({onLogin,t,darkMode,toggleDark}) {
 
   const handleRegistro = async () => {
     setError(""); setLoading(true);
-    const {error:err} = await supabase.auth.signUp({
+    const {error:err} = await supa.auth.signUp({
       email, password:pass,
       options:{ data:{ nombre, empresa } }
     });
@@ -1609,19 +1609,19 @@ function App() {
 
   React.useEffect(()=>{
     // Revisar sesión existente al cargar
-    supabase.auth.getSession().then(({data:{session}})=>{
+    supa.auth.getSession().then(({data:{session}})=>{
       setSession(session);
       setLoading(false);
     });
     // Escuchar cambios de sesión (login/logout)
-    const {data:{subscription}} = supabase.auth.onAuthStateChange((_,session)=>{
+    const {data:{subscription}} = supa.auth.onAuthStateChange((_,session)=>{
       setSession(session);
     });
     return ()=>subscription.unsubscribe();
   },[]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await supa.auth.signOut();
     setSession(null);
   };
 
