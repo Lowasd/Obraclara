@@ -1405,8 +1405,7 @@ function RegistroDiario({t, session}) {
   const remAct = i => setForm({...form,actividades:form.actividades.filter((_,j)=>j!==i)});
   const setAct = (i,f,v) => { const a=[...form.actividades]; a[i]={...a[i],[f]:v}; setForm({...form,actividades:a}); };
 
-  const handleGuardar = async () => {
-    setGuardando(true); setErrorGuardar("");
+  const handleGuardar = async () => {    setGuardando(true); setErrorGuardar("");
     const {error} = await supa.from("registros").insert({
       user_id: session.user.id,
       obra: form.obra,
@@ -1496,7 +1495,7 @@ function RegistroDiario({t, session}) {
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
               <div style={{marginBottom:0}}>
                 <label style={{fontSize:11,fontWeight:600,color:"#8899BB",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>Obra</label>
-                <select value={form.obra} onChange={e=>setForm({...form,obra:e.target.value})} style={sel(form.obra,form.obra,"")}>
+                <select value={form.obra} onChange={e=>setForm({...form,obra:e.target.value})} style={{padding:"11px 12px",background:"#0D1420",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",width:"100%"}}>
                   {OBRAS_RD.map(o=><option key={o} value={o} style={{background:"#111827"}}>{o}</option>)}
                 </select>
               </div>
