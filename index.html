@@ -589,7 +589,7 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout,session}) {
           )}
 
           {activeTab==="registro"&&(
-            <RegistroDiario t={t}/>
+            <RegistroDiario t={t} session={session}/>
           )}
 
           {activeTab==="mandante"&&(
@@ -1394,16 +1394,33 @@ function RDCard({title,icon,children}) {
   );
 }
 
-function RegistroDiario({t}) {
+function RegistroDiario({t, session}) {
   const [paso,setPaso] = React.useState(1);
   const [form,setForm] = React.useState(initForm());
   const [vista,setVista] = React.useState("form");
+  const [guardando,setGuardando] = React.useState(false);
+  const [errorGuardar,setErrorGuardar] = React.useState("");
 
   const addAct = () => setForm({...form,actividades:[...form.actividades,{partida:PARTIDAS_RD[0],descripcion:"",avance:0}]});
   const remAct = i => setForm({...form,actividades:form.actividades.filter((_,j)=>j!==i)});
   const setAct = (i,f,v) => { const a=[...form.actividades]; a[i]={...a[i],[f]:v}; setForm({...form,actividades:a}); };
 
-  const sel = (v,cur,col) => ({padding:"11px 12px",background:"#0D1420",border:`1.5px solid ${v===cur?"#3B82F6":"#1e2d45"}`,borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",width:"100%"});
+  const handleGuardar = async () => {
+    setGuardando(true); setErrorGuardar("");
+    const {error} = await supa.from("registros").insert({
+      user_id: session.user.id,
+      obra: form.obra,
+      fecha: form.fecha,
+      clima: form.clima,
+      personal_total: form.personalTotal,
+      actividades: form.actividades,
+      incidentes: form.incidentes,
+      observaciones: form.observaciones,
+    });
+    setGuardando(false);
+    if(error) { setErrorGuardar("Error al guardar: " + error.message); return; }
+    setVista("exito");
+  };
 
   if(vista==="exito") return (
     <div style={{textAlign:"center",padding:"40px 20px",animation:"fadeIn 0.5s ease"}}>
@@ -1445,9 +1462,16 @@ function RegistroDiario({t}) {
           ))}
         </div>
       )}
+      {errorGuardar&&(
+        <div style={{background:"#EF444418",border:"1px solid #EF444433",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
+          <p style={{fontSize:12,color:"#EF4444",margin:0}}>{errorGuardar}</p>
+        </div>
+      )}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginTop:20}}>
         <button onClick={()=>setVista("form")} style={{padding:"13px",background:t.bgCard2,border:`1px solid ${t.border}`,borderRadius:14,color:t.textSub,fontSize:14,fontWeight:600,cursor:"pointer"}}>← Editar</button>
-        <button onClick={()=>setVista("exito")} style={{padding:"13px",background:"linear-gradient(135deg,#10B981,#059669)",border:"none",borderRadius:14,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px #10B98144"}}>✓ Guardar Registro</button>
+        <button onClick={handleGuardar} disabled={guardando} style={{padding:"13px",background:guardando?"#1e2d45":"linear-gradient(135deg,#10B981,#059669)",border:"none",borderRadius:14,color:"#fff",fontSize:14,fontWeight:700,cursor:guardando?"default":"pointer",boxShadow:guardando?"none":"0 4px 20px #10B98144"}}>
+          {guardando?"⏳ Guardando...":"✓ Guardar Registro"}
+        </button>
       </div>
     </div>
   );
