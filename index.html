@@ -686,14 +686,20 @@ function PortalMandante({t, session}) {
   const [fotoSel,setFotoSel]     = React.useState(null);
   const [registros,setRegistros] = React.useState([]);
   const [cargando,setCargando]   = React.useState(true);
+  const [fotosHoy,setFotosHoy]   = React.useState([]);
   const avanceReal=67, avancePlan=75;
   const alerta = getPMColor(avanceReal,avancePlan,t);
+  const fechaHoy = new Date().toISOString().split("T")[0];
 
   React.useEffect(()=>{
     const cargar = async () => {
       setCargando(true);
-      const {data} = await supa.from("registros").select("*").order("fecha",{ascending:false}).limit(14);
-      setRegistros(data||[]);
+      const [{data:regs},{data:fhs}] = await Promise.all([
+        supa.from("registros").select("*").order("fecha",{ascending:false}).limit(14),
+        supa.from("fotos").select("*").eq("user_id", session?.user?.id).eq("fecha", fechaHoy).order("created_at",{ascending:true}),
+      ]);
+      setRegistros(regs||[]);
+      setFotosHoy(fhs||[]);
       setCargando(false);
     };
     cargar();
@@ -828,6 +834,27 @@ function PortalMandante({t, session}) {
           <p style={{fontSize:12,color:t.textMuted,marginBottom:16}}>
             {cargando?"Cargando registros...":registros.length>0?`${registros.length} registros reales de tu obra`:"Registro día a día de actividades, fotos y condiciones en obra."}
           </p>
+
+          {/* Fotos de hoy sin registro cerrado */}
+          {fotosHoy.length>0 && !registros.find(r=>r.fecha===fechaHoy) && (
+            <div style={{background:t.green+"0D",border:`1.5px solid ${t.green}33`,borderRadius:16,padding:18,marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                <span style={{fontSize:18}}>📸</span>
+                <div>
+                  <p style={{fontSize:13,fontWeight:700,color:t.green,margin:0}}>Fotos de hoy — registro aún no cerrado</p>
+                  <p style={{fontSize:11,color:t.textMuted,margin:"2px 0 0"}}>{fotosHoy.length} foto{fotosHoy.length>1?"s":""} subidas hoy · {new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+                {fotosHoy.map((f,i)=>(
+                  <div key={i} onClick={()=>setFotoSel(f)}
+                    style={{borderRadius:10,overflow:"hidden",cursor:"pointer",aspectRatio:"1",border:`1px solid ${t.border}`}}>
+                    <img src={f.url} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {diasCalendario.map((dia,i)=>{
             const abierto=diaAbierto===i;
             const esHoy=i===0;
