@@ -589,7 +589,7 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout,session}) {
           )}
 
           {activeTab==="registro"&&(
-            <RegistroDiario t={t} session={session}/>
+            <RegistroTab t={t} session={session}/>
           )}
 
           {activeTab==="mandante"&&(
@@ -1394,7 +1394,157 @@ function RDCard({title,icon,children}) {
   );
 }
 
-function RegistroDiario({t, session}) {
+function RegistroTab({t, session}) {
+  const [vista, setVista] = React.useState("historial"); // "historial" | "nuevo" | "detalle"
+  const [registros, setRegistros] = React.useState([]);
+  const [cargando, setCargando] = React.useState(true);
+  const [detalle, setDetalle] = React.useState(null);
+
+  const cargarRegistros = async () => {
+    setCargando(true);
+    const {data, error} = await supa
+      .from("registros")
+      .select("*")
+      .order("fecha", {ascending: false});
+    setCargando(false);
+    if(!error) setRegistros(data || []);
+  };
+
+  React.useEffect(()=>{ cargarRegistros(); },[]);
+
+  if(vista==="nuevo") return (
+    <RegistroDiario t={t} session={session} onGuardado={()=>{ cargarRegistros(); setVista("historial"); }}/>
+  );
+
+  if(vista==="detalle" && detalle) return (
+    <div style={{animation:"fadeIn 0.3s ease"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+        <button onClick={()=>setVista("historial")}
+          style={{padding:"8px 14px",borderRadius:10,background:t.bgCard,border:`1px solid ${t.border}`,color:t.textSub,fontSize:13,cursor:"pointer"}}>← Volver</button>
+        <div>
+          <h2 style={{fontSize:17,fontWeight:800,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>{detalle.obra}</h2>
+          <p style={{fontSize:12,color:t.textMuted,margin:0}}>{new Date(detalle.fecha+"T12:00").toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p>
+        </div>
+      </div>
+
+      {/* Resumen */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:20}}>
+        {[
+          {label:"Personal",value:detalle.personal_total+" personas",color:t.blue,icon:"👷"},
+          {label:"Clima",   value:CLIMAS_RD[detalle.clima]?.icon+" "+CLIMAS_RD[detalle.clima]?.label, color:t.yellow,icon:"🌤️"},
+          {label:"Actividades",value:detalle.actividades?.length+" registradas",color:t.green,icon:"✏️"},
+        ].map((k,i)=>(
+          <div key={i} style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:14,padding:"16px 18px",boxShadow:t.shadow}}>
+            <p style={{fontSize:11,color:t.textMuted,margin:"0 0 6px",textTransform:"uppercase",letterSpacing:"0.5px"}}>{k.label}</p>
+            <p style={{fontSize:15,fontWeight:700,color:k.color,margin:0}}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Actividades */}
+      {detalle.actividades?.length>0&&(
+        <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:20,marginBottom:16,boxShadow:t.shadow}}>
+          <h3 style={{fontSize:12,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:14}}>Actividades</h3>
+          {detalle.actividades.map((a,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<detalle.actividades.length-1?`1px solid ${t.border}`:"none"}}>
+              <div>
+                <p style={{fontSize:13,fontWeight:600,color:t.text,margin:0}}>{a.partida}</p>
+                {a.descripcion&&<p style={{fontSize:11,color:t.textMuted,margin:"3px 0 0"}}>{a.descripcion}</p>}
+              </div>
+              <span style={{fontSize:12,fontWeight:700,padding:"3px 12px",borderRadius:20,
+                background:(a.avance>=100?t.green:a.avance>50?t.yellow:t.blue)+"22",
+                color:a.avance>=100?t.green:a.avance>50?t.yellow:t.blue}}>
+                {a.avance}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Observaciones */}
+      {(detalle.incidentes||detalle.observaciones)&&(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          {detalle.incidentes&&(
+            <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:18,boxShadow:t.shadow}}>
+              <h3 style={{fontSize:12,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:10}}>Incidentes</h3>
+              <p style={{fontSize:13,color:t.textSub,margin:0,lineHeight:1.6}}>{detalle.incidentes}</p>
+            </div>
+          )}
+          {detalle.observaciones&&(
+            <div style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:18,boxShadow:t.shadow}}>
+              <h3 style={{fontSize:12,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:10}}>Observaciones</h3>
+              <p style={{fontSize:13,color:t.textSub,margin:0,lineHeight:1.6}}>{detalle.observaciones}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  // Vista historial
+  return (
+    <div style={{animation:"fadeIn 0.3s ease"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div>
+          <h2 style={{fontSize:16,fontWeight:700,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Historial de Registros</h2>
+          <p style={{fontSize:12,color:t.textMuted,margin:"3px 0 0"}}>{registros.length} registros guardados</p>
+        </div>
+        <button onClick={()=>setVista("nuevo")}
+          style={{background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:12,padding:"10px 20px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:`0 4px 16px ${t.blue}44`}}>
+          + Nuevo registro
+        </button>
+      </div>
+
+      {cargando?(
+        <div style={{textAlign:"center",padding:"60px 0",color:t.textMuted,fontSize:13}}>Cargando registros...</div>
+      ):registros.length===0?(
+        <div style={{textAlign:"center",padding:"60px 0"}}>
+          <div style={{fontSize:48,marginBottom:16}}>📋</div>
+          <p style={{fontSize:15,fontWeight:600,color:t.text,margin:"0 0 8px"}}>Sin registros todavía</p>
+          <p style={{fontSize:13,color:t.textMuted,margin:"0 0 24px"}}>Crea el primer registro del día</p>
+          <button onClick={()=>setVista("nuevo")}
+            style={{background:`linear-gradient(135deg,${t.blue},${t.blueDark})`,border:"none",borderRadius:12,padding:"12px 24px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+            + Nuevo registro
+          </button>
+        </div>
+      ):(
+        <div>
+          {registros.map((r,i)=>{
+            const fecha = new Date(r.fecha+"T12:00");
+            const diasAtras = Math.floor((new Date()-fecha)/(1000*60*60*24));
+            const cuandoLabel = diasAtras===0?"Hoy":diasAtras===1?"Ayer":`Hace ${diasAtras} días`;
+            return (
+              <div key={r.id} onClick={()=>{setDetalle(r);setVista("detalle");}}
+                style={{background:t.bgCard,border:`1px solid ${t.border}`,borderRadius:16,padding:"16px 20px",marginBottom:10,cursor:"pointer",transition:"all 0.2s",boxShadow:t.shadow,display:"flex",alignItems:"center",gap:16}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor=t.blue+"66"}
+                onMouseLeave={e=>e.currentTarget.style.borderColor=t.border}>
+                {/* Fecha bloque */}
+                <div style={{width:52,height:52,borderRadius:14,background:t.blue+"18",border:`1px solid ${t.blue}33`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <span style={{fontSize:18,fontWeight:800,color:t.blue,fontFamily:"'Sora',sans-serif",lineHeight:1}}>{fecha.getDate()}</span>
+                  <span style={{fontSize:9,color:t.blue,fontWeight:600,textTransform:"uppercase"}}>{fecha.toLocaleString("es-CL",{month:"short"})}</span>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <p style={{fontSize:14,fontWeight:700,color:t.text,margin:0}}>{r.obra}</p>
+                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:t.green+"22",color:t.green}}>{cuandoLabel}</span>
+                  </div>
+                  <div style={{display:"flex",gap:16}}>
+                    <span style={{fontSize:11,color:t.textMuted}}>👷 {r.personal_total} personas</span>
+                    <span style={{fontSize:11,color:t.textMuted}}>{CLIMAS_RD[r.clima]?.icon} {CLIMAS_RD[r.clima]?.label}</span>
+                    <span style={{fontSize:11,color:t.textMuted}}>✏️ {r.actividades?.length||0} actividades</span>
+                  </div>
+                </div>
+                <span style={{color:t.textMuted,fontSize:18}}>→</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RegistroDiario({t, session, onGuardado}) {
   const [paso,setPaso] = React.useState(1);
   const [form,setForm] = React.useState(initForm());
   const [vista,setVista] = React.useState("form");
@@ -1418,7 +1568,8 @@ function RegistroDiario({t, session}) {
     });
     setGuardando(false);
     if(error) { setErrorGuardar("Error al guardar: " + error.message); return; }
-    setVista("exito");
+    if(onGuardado) onGuardado();
+    else setVista("exito");
   };
 
   if(vista==="exito") return (
@@ -1478,6 +1629,13 @@ function RegistroDiario({t, session}) {
   return (
     <div style={{animation:"fadeIn 0.3s ease"}}>
       <style>{`input[type=range]{-webkit-appearance:none;height:6px;border-radius:3px;background:#1e2d45;}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#3B82F6;cursor:pointer;}`}</style>
+      {/* Header */}
+      {onGuardado&&(
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+          <button onClick={onGuardado} style={{padding:"8px 14px",borderRadius:10,background:t.bgCard,border:`1px solid ${t.border}`,color:t.textSub,fontSize:13,cursor:"pointer"}}>← Cancelar</button>
+          <h2 style={{fontSize:16,fontWeight:700,color:t.text,margin:0,fontFamily:"'Sora',sans-serif"}}>Nuevo Registro</h2>
+        </div>
+      )}
       {/* Progress */}
       <div style={{display:"flex",gap:6,marginBottom:20}}>
         {PASOS_RD.map(p=>(
