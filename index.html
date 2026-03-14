@@ -641,30 +641,22 @@ function getPMColor(real,plan,t){
 }
 
 function FotosDelDia({t, userId, fecha, onFotoSel}) {
-  const [fotos, setFotos] = React.useState([]);
+  const [fotos, setFotos]     = React.useState([]);
   const [cargando, setCargando] = React.useState(true);
 
   React.useEffect(()=>{
     const cargar = async () => {
       setCargando(true);
-      const {data} = await supa.storage.from("fotos").list(userId, {limit:50});
-      if(data) {
-        // Filtrar por fecha aproximada (nombre del archivo contiene timestamp)
-        const fechaTs = new Date(fecha+"T00:00:00").getTime();
-        const fechaFin = fechaTs + 86400000;
-        const filtradas = data.filter(f=>{
-          const ts = parseInt(f.name.split("_")[0]);
-          return ts >= fechaTs && ts < fechaFin;
-        });
-        const conUrls = filtradas.map(f=>{
-          const {data:{publicUrl}} = supa.storage.from("fotos").getPublicUrl(`${userId}/${f.name}`);
-          return {url:publicUrl, nombre:f.name, desc:"Foto del día"};
-        });
-        setFotos(conUrls);
-      }
+      const {data} = await supa
+        .from("fotos")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("fecha", fecha)
+        .order("created_at", {ascending:true});
+      setFotos(data||[]);
       setCargando(false);
     };
-    if(userId) cargar();
+    if(userId && fecha) cargar();
     else setCargando(false);
   },[userId, fecha]);
 
@@ -920,7 +912,7 @@ function PortalMandante({t, session}) {
             }
             <div style={{padding:22}}>
               {fotoSel.hora&&<p style={{fontSize:12,color:t.textMuted,margin:"0 0 6px"}}>{fotoSel.hora}</p>}
-              {fotoSel.desc&&<p style={{fontSize:14,color:t.text,margin:0,lineHeight:1.6}}>{fotoSel.desc}</p>}
+              {(fotoSel.desc||fotoSel.descripcion)&&<p style={{fontSize:14,color:t.text,margin:0,lineHeight:1.6}}>{fotoSel.desc||fotoSel.descripcion}</p>}
               <button onClick={()=>setFotoSel(null)} style={{width:"100%",marginTop:18,padding:"11px",background:t.bgCard2,border:`1px solid ${t.border}`,borderRadius:12,color:t.textSub,fontSize:13,cursor:"pointer"}}>Cerrar</button>
             </div>
           </div>
@@ -1055,6 +1047,7 @@ function FotoRapidaModal({t, onClose, onEnviar, session}) {
     if(fotos.length===0) return;
     setSubiendo(true); setError("");
     const fotosSubidas = [];
+    const fechaHoy = new Date().toISOString().split("T")[0];
 
     for(const foto of fotos) {
       const ext = foto.file.name.split(".").pop();
@@ -1066,6 +1059,16 @@ function FotoRapidaModal({t, onClose, onEnviar, session}) {
       if(uploadError) { setError("Error subiendo foto: "+uploadError.message); setSubiendo(false); return; }
 
       const {data:{publicUrl}} = supa.storage.from("fotos").getPublicUrl(path);
+
+      // Guardar referencia en tabla fotos
+      await supa.from("fotos").insert({
+        user_id: session.user.id,
+        fecha: fechaHoy,
+        url: publicUrl,
+        descripcion: foto.desc || descComun || "Avance registrado",
+        hora,
+      });
+
       fotosSubidas.push({
         hora,
         url: publicUrl,
