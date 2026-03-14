@@ -593,7 +593,7 @@ function DashboardWeb({t,darkMode,toggleDark,onLogout,session}) {
           )}
 
           {activeTab==="mandante"&&(
-            <PortalMandante t={t}/>
+            <PortalMandante t={t} session={session}/>
           )}
         </div>
       </div>
@@ -640,12 +640,86 @@ function getPMColor(real,plan,t){
   return          {color:t.red,   icon:"○", bg:t.red+"18",    border:t.red+"33"};
 }
 
-function PortalMandante({t}) {
-  const [tab,setTab] = React.useState("resumen");
+function FotosDelDia({t, userId, fecha, onFotoSel}) {
+  const [fotos, setFotos] = React.useState([]);
+  const [cargando, setCargando] = React.useState(true);
+
+  React.useEffect(()=>{
+    const cargar = async () => {
+      setCargando(true);
+      const {data} = await supa.storage.from("fotos").list(userId, {limit:50});
+      if(data) {
+        // Filtrar por fecha aproximada (nombre del archivo contiene timestamp)
+        const fechaTs = new Date(fecha+"T00:00:00").getTime();
+        const fechaFin = fechaTs + 86400000;
+        const filtradas = data.filter(f=>{
+          const ts = parseInt(f.name.split("_")[0]);
+          return ts >= fechaTs && ts < fechaFin;
+        });
+        const conUrls = filtradas.map(f=>{
+          const {data:{publicUrl}} = supa.storage.from("fotos").getPublicUrl(`${userId}/${f.name}`);
+          return {url:publicUrl, nombre:f.name, desc:"Foto del día"};
+        });
+        setFotos(conUrls);
+      }
+      setCargando(false);
+    };
+    if(userId) cargar();
+    else setCargando(false);
+  },[userId, fecha]);
+
+  if(cargando) return <p style={{fontSize:11,color:t.textMuted,margin:"8px 0"}}>Cargando fotos...</p>;
+  if(fotos.length===0) return null;
+
+  return (
+    <>
+      <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:10}}>Fotos del día ({fotos.length})</p>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
+        {fotos.map((f,j)=>(
+          <div key={j} onClick={()=>onFotoSel(f)}
+            style={{borderRadius:12,overflow:"hidden",cursor:"pointer",border:`1px solid ${t.border}`,transition:"all 0.15s",aspectRatio:"1"}}
+            onMouseEnter={e=>e.currentTarget.style.borderColor=t.blue+"66"}
+            onMouseLeave={e=>e.currentTarget.style.borderColor=t.border}>
+            <img src={f.url} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function PortalMandante({t, session}) {
+  const [tab,setTab]             = React.useState("resumen");
   const [diaAbierto,setDiaAbierto] = React.useState(0);
-  const [fotoSel,setFotoSel] = React.useState(null);
+  const [fotoSel,setFotoSel]     = React.useState(null);
+  const [registros,setRegistros] = React.useState([]);
+  const [cargando,setCargando]   = React.useState(true);
   const avanceReal=67, avancePlan=75;
   const alerta = getPMColor(avanceReal,avancePlan,t);
+
+  React.useEffect(()=>{
+    const cargar = async () => {
+      setCargando(true);
+      const {data} = await supa.from("registros").select("*").order("fecha",{ascending:false}).limit(14);
+      setRegistros(data||[]);
+      setCargando(false);
+    };
+    cargar();
+  },[]);
+
+  // Construir calendario mezclando datos reales con demo
+  const diasCalendario = registros.length > 0 ? registros.map(r=>({
+    fecha: new Date(r.fecha+"T12:00").toLocaleDateString("es-CL",{weekday:"short",day:"numeric",month:"short"}),
+    tieneRegistro: true,
+    esFinDeSemana: [0,6].includes(new Date(r.fecha+"T12:00").getDay()),
+    clima: CLIMAS_RD[r.clima]?.icon || "☀️",
+    personal: r.personal_total,
+    fotos: [], // las fotos se muestran desde storage directamente
+    actividades: r.actividades?.map(a=>`${a.partida}: ${a.descripcion||"Sin descripción"}`).join(" · ") || "",
+    incidentes: r.incidentes,
+    observaciones: r.observaciones,
+    rawFecha: r.fecha,
+  })) : CALENDARIO_PM;
 
   return (
     <div style={{animation:"fadeIn 0.3s ease"}}>
@@ -759,8 +833,10 @@ function PortalMandante({t}) {
       {/* ── CALENDARIO ── */}
       {tab==="calendario"&&(
         <div style={{animation:"fadeIn 0.25s ease"}}>
-          <p style={{fontSize:12,color:t.textMuted,marginBottom:16}}>Registro día a día de actividades, fotos y condiciones en obra.</p>
-          {CALENDARIO_PM.map((dia,i)=>{
+          <p style={{fontSize:12,color:t.textMuted,marginBottom:16}}>
+            {cargando?"Cargando registros...":registros.length>0?`${registros.length} registros reales de tu obra`:"Registro día a día de actividades, fotos y condiciones en obra."}
+          </p>
+          {diasCalendario.map((dia,i)=>{
             const abierto=diaAbierto===i;
             const esHoy=i===0;
             return(
@@ -778,7 +854,6 @@ function PortalMandante({t}) {
                       <span style={{fontSize:16}}>{dia.clima}</span>
                       <p style={{fontSize:12,color:t.textSub,margin:0,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:340}}>{dia.actividades}</p>
                       <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                        {dia.fotos.length>0&&<span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:20,background:t.green+"22",color:t.green}}>📸 {dia.fotos.length}</span>}
                         <span style={{fontSize:11,color:t.textMuted}}>👷 {dia.personal}</span>
                         {esHoy&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:t.blue+"22",color:t.blue}}>HOY</span>}
                         <span style={{fontSize:14,color:t.textMuted,display:"inline-block",transform:abierto?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}>▾</span>
@@ -806,23 +881,22 @@ function PortalMandante({t}) {
                           </div>
                         </div>
                         <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:8}}>Actividades del día</p>
-                        <p style={{fontSize:13,color:t.textSub,margin:"0 0 16px",lineHeight:1.7,padding:"12px 16px",background:t.bgCard2,borderRadius:12}}>{dia.actividades}</p>
-                        {dia.fotos.length>0&&(
-                          <>
-                            <p style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:10}}>Fotos del día</p>
-                            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-                              {dia.fotos.map((f,j)=>(
-                                <div key={j} onClick={()=>setFotoSel(f)}
-                                  style={{background:t.bgCard2,borderRadius:12,padding:"12px 8px",textAlign:"center",cursor:"pointer",border:`1px solid ${t.border}`,transition:"all 0.15s"}}
-                                  onMouseEnter={e=>e.currentTarget.style.borderColor=t.blue+"66"}
-                                  onMouseLeave={e=>e.currentTarget.style.borderColor=t.border}>
-                                  <div style={{fontSize:28,marginBottom:5}}>{f.emoji}</div>
-                                  <p style={{fontSize:9,color:t.textMuted,margin:"0 0 2px"}}>{f.hora}</p>
-                                  <p style={{fontSize:10,color:t.textSub,margin:0,lineHeight:1.3,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{f.desc}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </>
+                        <p style={{fontSize:13,color:t.textSub,margin:"0 0 16px",lineHeight:1.7,padding:"12px 16px",background:t.bgCard2,borderRadius:12}}>{dia.actividades||"Sin descripción"}</p>
+                        {/* Fotos reales desde Storage */}
+                        {dia.rawFecha&&<FotosDelDia t={t} userId={session?.user?.id} fecha={dia.rawFecha} onFotoSel={setFotoSel}/>}
+                        {/* Incidentes */}
+                        {dia.incidentes&&dia.incidentes!=="Sin incidentes en el día"&&(
+                          <div style={{background:t.red+"10",border:`1px solid ${t.red}22`,borderRadius:12,padding:"12px 16px",marginTop:12}}>
+                            <p style={{fontSize:11,fontWeight:700,color:t.red,margin:"0 0 4px",textTransform:"uppercase",letterSpacing:"0.5px"}}>⚠ Incidentes</p>
+                            <p style={{fontSize:13,color:t.textSub,margin:0}}>{dia.incidentes}</p>
+                          </div>
+                        )}
+                        {/* Observaciones */}
+                        {dia.observaciones&&dia.observaciones!=="Sin observaciones generales"&&(
+                          <div style={{background:t.blue+"08",border:`1px solid ${t.blue}22`,borderRadius:12,padding:"12px 16px",marginTop:8}}>
+                            <p style={{fontSize:11,fontWeight:700,color:t.blue,margin:"0 0 4px",textTransform:"uppercase",letterSpacing:"0.5px"}}>📝 Observaciones</p>
+                            <p style={{fontSize:13,color:t.textSub,margin:0}}>{dia.observaciones}</p>
+                          </div>
                         )}
                       </>
                     ):(
@@ -839,11 +913,14 @@ function PortalMandante({t}) {
       {/* Modal foto */}
       {fotoSel&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setFotoSel(null)}>
-          <div style={{background:t.bgCard,borderRadius:24,overflow:"hidden",maxWidth:420,width:"100%",boxShadow:"0 40px 120px rgba(0,0,0,0.6)"}} onClick={e=>e.stopPropagation()}>
-            <div style={{height:200,background:`linear-gradient(135deg,${t.bgCard2},${t.border}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:72}}>{fotoSel.emoji}</div>
+          <div style={{background:t.bgCard,borderRadius:24,overflow:"hidden",maxWidth:480,width:"100%",boxShadow:"0 40px 120px rgba(0,0,0,0.6)"}} onClick={e=>e.stopPropagation()}>
+            {fotoSel.url
+              ? <img src={fotoSel.url} alt="" style={{width:"100%",maxHeight:320,objectFit:"cover",display:"block"}}/>
+              : <div style={{height:200,background:`linear-gradient(135deg,${t.bgCard2},${t.border}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:72}}>📸</div>
+            }
             <div style={{padding:22}}>
-              <p style={{fontSize:12,color:t.textMuted,margin:"0 0 6px"}}>{fotoSel.hora}</p>
-              <p style={{fontSize:14,color:t.text,margin:0,lineHeight:1.6}}>{fotoSel.desc}</p>
+              {fotoSel.hora&&<p style={{fontSize:12,color:t.textMuted,margin:"0 0 6px"}}>{fotoSel.hora}</p>}
+              {fotoSel.desc&&<p style={{fontSize:14,color:t.text,margin:0,lineHeight:1.6}}>{fotoSel.desc}</p>}
               <button onClick={()=>setFotoSel(null)} style={{width:"100%",marginTop:18,padding:"11px",background:t.bgCard2,border:`1px solid ${t.border}`,borderRadius:12,color:t.textSub,fontSize:13,cursor:"pointer"}}>Cerrar</button>
             </div>
           </div>
