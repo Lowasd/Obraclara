@@ -703,7 +703,7 @@ function PortalMandante({t, session}) {
   const diasCalendario = registros.length > 0 ? registros.map(r=>({
     fecha: new Date(r.fecha+"T12:00").toLocaleDateString("es-CL",{weekday:"short",day:"numeric",month:"short"}),
     tieneRegistro: true,
-    esFinDeSemana: [0,6].includes(new Date(r.fecha+"T12:00").getDay()),
+    esFinDeSemana: false, // si hay registro se muestra siempre
     clima: CLIMAS_RD[r.clima]?.icon || "☀️",
     personal: r.personal_total,
     fotos: [], // las fotos se muestran desde storage directamente
