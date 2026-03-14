@@ -949,68 +949,74 @@ function PersonalSelector({t}) {
   );
 }
 
-function FotoRapidaModal({t,onClose,onEnviar}) {
-  const emojis = ["🏗️","⚙️","🔨","🧱","⚡","🔧","🪵","🪣","🔩","🪜"];
-  const [paso,setPaso] = React.useState("elegir"); // "elegir" | "camara" | "galeria" | "confirmar"
-  const [fotos,setFotos] = React.useState([]);
-  const [descComun,setDescComun] = React.useState("");
+function FotoRapidaModal({t, onClose, onEnviar, session}) {
+  const [paso, setPaso]           = React.useState("elegir");
+  const [fotos, setFotos]         = React.useState([]); // [{file, preview, desc, subiendo, url}]
+  const [descComun, setDescComun] = React.useState("");
+  const [subiendo, setSubiendo]   = React.useState(false);
+  const [error, setError]         = React.useState("");
   const hora = new Date().toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"});
+  const fileInputRef = React.useRef();
 
-  // Simula selección múltiple de galería
-  const GALERIA_DEMO = [
-    {id:1,emoji:"🏗️",nombre:"IMG_4521.jpg"},
-    {id:2,emoji:"⚙️",nombre:"IMG_4522.jpg"},
-    {id:3,emoji:"🔨",nombre:"IMG_4523.jpg"},
-    {id:4,emoji:"🧱",nombre:"IMG_4524.jpg"},
-    {id:5,emoji:"⚡",nombre:"IMG_4525.jpg"},
-    {id:6,emoji:"🔧",nombre:"IMG_4526.jpg"},
-    {id:7,emoji:"🪵",nombre:"IMG_4527.jpg"},
-    {id:8,emoji:"🪣",nombre:"IMG_4528.jpg"},
-  ];
-  const [seleccionadas,setSeleccionadas] = React.useState([]);
-
-  const toggleSeleccion = (foto) => {
-    const yaEsta = seleccionadas.find(f=>f.id===foto.id);
-    if(yaEsta) { setSeleccionadas(seleccionadas.filter(f=>f.id!==foto.id)); return; }
-    if(seleccionadas.length>=10) return;
-    setSeleccionadas([...seleccionadas,foto]);
-  };
-
-  const confirmarGaleria = () => {
-    setFotos(seleccionadas.map(f=>({...f,desc:""})));
-    setPaso("confirmar");
-  };
-
-  const tomarFoto = () => {
-    const nueva = {id:Date.now(),emoji:emojis[Math.floor(Math.random()*emojis.length)],nombre:"FOTO_"+hora+".jpg",desc:""};
-    setFotos([nueva]);
+  const onSeleccionarArchivos = (e) => {
+    const archivos = Array.from(e.target.files).slice(0,10);
+    const nuevas = archivos.map(file => ({
+      id: Date.now()+Math.random(),
+      file,
+      preview: URL.createObjectURL(file),
+      nombre: file.name,
+      desc: "",
+    }));
+    setFotos(nuevas);
     setPaso("confirmar");
   };
 
   const quitarFoto = (id) => setFotos(fotos.filter(f=>f.id!==id));
   const setDesc = (id,val) => setFotos(fotos.map(f=>f.id===id?{...f,desc:val}:f));
 
-  const handleEnviar = () => {
-    const nuevas = fotos.map(f=>({hora,emoji:f.emoji,desc:f.desc||descComun||"Avance registrado"}));
-    onEnviar(nuevas);
+  const handleEnviar = async () => {
+    if(fotos.length===0) return;
+    setSubiendo(true); setError("");
+    const fotosSubidas = [];
+
+    for(const foto of fotos) {
+      const ext = foto.file.name.split(".").pop();
+      const path = `${session.user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const {error:uploadError} = await supa.storage
+        .from("fotos")
+        .upload(path, foto.file, {contentType: foto.file.type});
+
+      if(uploadError) { setError("Error subiendo foto: "+uploadError.message); setSubiendo(false); return; }
+
+      const {data:{publicUrl}} = supa.storage.from("fotos").getPublicUrl(path);
+      fotosSubidas.push({
+        hora,
+        url: publicUrl,
+        desc: foto.desc || descComun || "Avance registrado",
+        nombre: foto.nombre,
+      });
+    }
+
+    setSubiendo(false);
+    onEnviar(fotosSubidas);
   };
 
   return (
     <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.95)",zIndex:50,display:"flex",flexDirection:"column",animation:"fadeIn 0.2s ease"}}>
+      {/* Input file oculto */}
+      <input ref={fileInputRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={onSeleccionarArchivos}/>
 
       {/* Header */}
       <div style={{padding:"18px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #1e2d45",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           {paso!=="elegir"&&(
-            <button onClick={()=>setPaso(paso==="confirmar"?(fotos.length&&seleccionadas.length?"galeria":"elegir"):"elegir")}
+            <button onClick={()=>{setPaso("elegir");setFotos([]);}}
               style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,width:30,height:30,color:"#fff",fontSize:16,cursor:"pointer"}}>←</button>
           )}
           <div>
             <h2 style={{fontSize:17,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Sora',sans-serif"}}>📸 Foto Rápida</h2>
             <p style={{fontSize:11,color:"#445566",margin:"2px 0 0"}}>
               {paso==="elegir"&&"¿Cómo quieres agregar fotos?"}
-              {paso==="camara"&&"Tomando foto..."}
-              {paso==="galeria"&&`${seleccionadas.length}/10 seleccionadas`}
               {paso==="confirmar"&&`${fotos.length} foto${fotos.length>1?"s":""} listas para enviar`}
             </p>
           </div>
@@ -1018,10 +1024,10 @@ function FotoRapidaModal({t,onClose,onEnviar}) {
         <button onClick={onClose} style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:10,width:34,height:34,color:"#fff",fontSize:18,cursor:"pointer"}}>×</button>
       </div>
 
-      {/* PASO: Elegir origen */}
+      {/* PASO: Elegir */}
       {paso==="elegir"&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"20px"}}>
-          <button onClick={tomarFoto}
+          <button onClick={()=>{ fileInputRef.current.setAttribute("capture","environment"); fileInputRef.current.click(); }}
             style={{background:"#0D1420",border:"2px solid #1e2d45",borderRadius:22,padding:"28px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:18,transition:"all 0.2s",width:"100%"}}
             onMouseEnter={e=>e.currentTarget.style.borderColor="#10B981"}
             onMouseLeave={e=>e.currentTarget.style.borderColor="#1e2d45"}>
@@ -1031,7 +1037,7 @@ function FotoRapidaModal({t,onClose,onEnviar}) {
               <p style={{fontSize:12,color:"#445566",margin:"4px 0 0"}}>Abre la cámara ahora</p>
             </div>
           </button>
-          <button onClick={()=>setPaso("galeria")}
+          <button onClick={()=>{ fileInputRef.current.removeAttribute("capture"); fileInputRef.current.click(); }}
             style={{background:"#0D1420",border:"2px solid #1e2d45",borderRadius:22,padding:"28px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:18,transition:"all 0.2s",width:"100%"}}
             onMouseEnter={e=>e.currentTarget.style.borderColor="#3B82F6"}
             onMouseLeave={e=>e.currentTarget.style.borderColor="#1e2d45"}>
@@ -1048,84 +1054,33 @@ function FotoRapidaModal({t,onClose,onEnviar}) {
         </div>
       )}
 
-      {/* PASO: Galería con selección múltiple */}
-      {paso==="galeria"&&(
-        <div style={{flex:1,display:"flex",flexDirection:"column"}}>
-          <div style={{flex:1,overflowY:"auto",padding:"14px 20px"}}>
-            <p style={{fontSize:11,color:"#445566",marginBottom:12}}>Toca para seleccionar · máximo 10 fotos</p>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-              {GALERIA_DEMO.map(foto=>{
-                const sel = seleccionadas.find(f=>f.id===foto.id);
-                const idx = seleccionadas.findIndex(f=>f.id===foto.id);
-                const bloqueada = !sel && seleccionadas.length>=10;
-                return (
-                  <div key={foto.id} onClick={()=>!bloqueada&&toggleSeleccion(foto)}
-                    style={{aspectRatio:"1",background:"#0D1420",borderRadius:14,
-                      border:`2px solid ${sel?"#3B82F6":"#1e2d45"}`,
-                      display:"flex",flexDirection:"column",alignItems:"center",
-                      justifyContent:"center",cursor:bloqueada?"not-allowed":"pointer",
-                      position:"relative",opacity:bloqueada?0.4:1,transition:"all 0.15s"}}>
-                    <span style={{fontSize:32}}>{foto.emoji}</span>
-                    <span style={{fontSize:9,color:"#445566",marginTop:4}}>{foto.nombre}</span>
-                    {sel&&(
-                      <div style={{position:"absolute",top:6,right:6,width:22,height:22,
-                        borderRadius:"50%",background:"#3B82F6",display:"flex",
-                        alignItems:"center",justifyContent:"center",fontSize:11,
-                        fontWeight:800,color:"#fff"}}>
-                        {idx+1}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div style={{padding:"14px 20px 28px",flexShrink:0}}>
-            <button onClick={confirmarGaleria} disabled={seleccionadas.length===0}
-              style={{width:"100%",background:seleccionadas.length?"linear-gradient(135deg,#3B82F6,#1D4ED8)":"#1e2d45",
-                border:"none",borderRadius:14,padding:15,color:seleccionadas.length?"#fff":"#445566",
-                fontSize:15,fontWeight:700,cursor:seleccionadas.length?"pointer":"default",
-                boxShadow:seleccionadas.length?"0 4px 20px #3B82F644":"none"}}>
-              {seleccionadas.length?`Confirmar ${seleccionadas.length} foto${seleccionadas.length>1?"s":""}  →`:"Selecciona al menos 1 foto"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* PASO: Confirmar + descripción */}
+      {/* PASO: Confirmar */}
       {paso==="confirmar"&&(
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
           <div style={{flex:1,overflowY:"auto",padding:"14px 20px"}}>
-            {/* Descripción común */}
             <input placeholder="Descripción para todas (opcional)..."
               value={descComun} onChange={e=>setDescComun(e.target.value)}
-              style={{width:"100%",padding:"12px 14px",background:"#111827",
-                border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",
-                fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",
-                boxSizing:"border-box",marginBottom:14}}
+              style={{width:"100%",padding:"12px 14px",background:"#111827",border:"1.5px solid #1e2d45",borderRadius:12,color:"#F0F4FF",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:14}}
               onFocus={e=>e.target.style.border="1.5px solid #10B981"}
               onBlur={e=>e.target.style.border="1.5px solid #1e2d45"}/>
 
-            {/* Lista fotos con desc individual */}
             {fotos.map((f,i)=>(
-              <div key={f.id} style={{background:"#0D1420",borderRadius:14,
-                border:"1px solid #1e2d45",marginBottom:10,
-                display:"flex",alignItems:"center",gap:12,padding:"10px 14px"}}>
-                <div style={{width:46,height:46,borderRadius:12,background:"#111827",
-                  display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>
-                  {f.emoji}
+              <div key={f.id} style={{background:"#0D1420",borderRadius:14,border:"1px solid #1e2d45",marginBottom:10,overflow:"hidden"}}>
+                <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px"}}>
+                  {/* Preview real */}
+                  <img src={f.preview} alt="" style={{width:52,height:52,borderRadius:10,objectFit:"cover",flexShrink:0}}/>
+                  <input placeholder={`Foto ${i+1} — descripción (opcional)`}
+                    value={f.desc} onChange={e=>setDesc(f.id,e.target.value)}
+                    style={{flex:1,background:"transparent",border:"none",color:"#8899BB",fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:"none"}}/>
+                  <button onClick={()=>quitarFoto(f.id)}
+                    style={{background:"none",border:"none",color:"#EF4444",fontSize:18,cursor:"pointer",flexShrink:0}}>×</button>
                 </div>
-                <input placeholder={`Foto ${i+1} — descripción (opcional)`}
-                  value={f.desc} onChange={e=>setDesc(f.id,e.target.value)}
-                  style={{flex:1,background:"transparent",border:"none",color:"#8899BB",
-                    fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:"none"}}/>
-                <button onClick={()=>quitarFoto(f.id)}
-                  style={{background:"none",border:"none",color:"#EF4444",fontSize:18,cursor:"pointer",flexShrink:0}}>×</button>
               </div>
             ))}
 
-            <div style={{background:"#10B98114",border:"1px solid #10B98133",
-              borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+            {error&&<p style={{fontSize:12,color:"#EF4444",margin:"8px 0"}}>{error}</p>}
+
+            <div style={{background:"#10B98114",border:"1px solid #10B98133",borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,marginTop:4}}>
               <span>👁️</span>
               <p style={{fontSize:11,color:"#10B981",margin:0,fontWeight:600}}>
                 El mandante verá {fotos.length} foto{fotos.length>1?"s":""} al instante
@@ -1134,11 +1089,9 @@ function FotoRapidaModal({t,onClose,onEnviar}) {
           </div>
 
           <div style={{padding:"14px 20px 28px",flexShrink:0}}>
-            <button onClick={handleEnviar} disabled={fotos.length===0}
-              style={{width:"100%",background:"linear-gradient(135deg,#10B981,#059669)",
-                border:"none",borderRadius:14,padding:15,color:"#fff",fontSize:15,
-                fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px #10B98144"}}>
-              ✓ Enviar {fotos.length} foto{fotos.length>1?"s":""} al mandante
+            <button onClick={handleEnviar} disabled={fotos.length===0||subiendo}
+              style={{width:"100%",background:subiendo?"#1e2d45":"linear-gradient(135deg,#10B981,#059669)",border:"none",borderRadius:14,padding:15,color:"#fff",fontSize:15,fontWeight:700,cursor:subiendo?"default":"pointer",boxShadow:subiendo?"none":"0 4px 20px #10B98144"}}>
+              {subiendo?`⏳ Subiendo ${fotos.length} foto${fotos.length>1?"s":""}...`:`✓ Enviar ${fotos.length} foto${fotos.length>1?"s":""} al mandante`}
             </button>
           </div>
         </div>
@@ -1210,7 +1163,12 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout,session}) {
                   </div>
                   {fotosHoy.map((f,i)=>(
                     <div key={i} style={{display:"flex",gap:12,padding:"12px 16px",borderBottom:i<fotosHoy.length-1?`1px solid ${t.border}`:"none",alignItems:"center"}}>
-                      <div style={{width:40,height:40,borderRadius:10,background:t.bgCard2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{f.emoji}</div>
+                      <div style={{width:40,height:40,borderRadius:10,background:t.bgCard2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,overflow:"hidden"}}>
+                        {f.url
+                          ? <img src={f.url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                          : <span>📸</span>
+                        }
+                      </div>
                       <div style={{flex:1,minWidth:0}}>
                         <p style={{fontSize:12,fontWeight:600,color:t.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.desc}</p>
                         <p style={{fontSize:10,color:t.textMuted,margin:"2px 0 0"}}>{f.hora}</p>
@@ -1239,6 +1197,7 @@ function DashboardMobile({t,darkMode,toggleDark,onLogout,session}) {
           {fotoRapida&&(
             <FotoRapidaModal
               t={t}
+              session={session}
               onClose={()=>setFotoRapida(false)}
               onEnviar={(nuevas)=>{
                 setFotosHoy([...fotosHoy,...nuevas]);
